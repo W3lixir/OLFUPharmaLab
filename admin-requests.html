@@ -736,37 +736,50 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
 
         async function releaseRequest() {
             if (!currentRequestData) return;
-            if (!confirm('Mark this request as Released? This will log borrowed glassware and equipment.')) return;
+            if (!confirm('Mark this request as Released? This will deduct the requested items from inventory.')) return;
 
             try {
                 await updateRequestStatus(currentRequestData.requestId, 'released');
                 await addAuditEntry('Request Released', currentRequestData.requestId + ' — ' + (currentRequestData.studentName || ''));
 
-                // Auto-log glassware and equipment borrows
+                // Deduct all requested items from inventory.
+                // Glassware/Equipment are borrowed (restored on return); reagents/discs are consumed.
                 const borrower = currentRequestData.studentName || 'Unknown';
                 const items = currentRequestData.items || [];
                 const borrowCategories = ['Glassware', 'Equipment'];
+                const skipped = [];
 
-                const borrowItems = items.filter(it => borrowCategories.includes(it.category));
-                if (borrowItems.length > 0) {
-                    // Fetch all chemicals once to match by name
-                    const { data: chemicals } = await db.from('chemicals').select('id,name,category,quantity,unit');
-                    for (const item of borrowItems) {
+                if (items.length > 0) {
+                    const { data: chemicals, error: chemErr } = await db.from('chemicals').select('id,name,category,quantity,unit');
+                    if (chemErr) throw chemErr;
+                    const norm = v => String(v || '').trim().toLowerCase();
+                    for (const item of items) {
+                        const isBorrow = borrowCategories.includes(item.category);
                         const match = (chemicals || []).find(c =>
-                            c.name.toLowerCase() === item.name.toLowerCase() &&
-                            borrowCategories.includes(c.category)
+                            norm(c.name) === norm(item.name) && norm(c.category) === norm(item.category)
                         );
                         const qty = Number(item.quantity) || 0;
                         const unit = item.unit || (match?.unit) || 'pcs';
+                        const unitMismatch = match && !isBorrow && item.unit && match.unit && norm(item.unit) !== norm(match.unit);
 
-                        if (match && qty > 0) {
+                        if (!match) {
+                            skipped.push(`${item.name} — not found in inventory`);
+                        } else if (unitMismatch) {
+                            skipped.push(`${item.name} — requested in ${item.unit}, stock is in ${match.unit}`);
+                        } else if (qty > 0) {
                             const newQty = Math.max(0, Number(match.quantity || 0) - qty);
-                            await db.from('chemicals').update({ quantity: newQty }).eq('id', match.id);
+                            const { error: updErr } = await db.from('chemicals').update({ quantity: newQty }).eq('id', match.id);
+                            if (updErr) throw updErr;
+                            match.quantity = newQty;
                         }
 
-                        const details = `${item.name} | ${item.category} | ${qty} ${unit} | Borrower: ${borrower} | Req: ${currentRequestData.requestId}`;
-                        await addAuditEntry('Borrow', details);
+                        const details = `${item.name} | ${item.category} | ${qty} ${unit} | ${isBorrow ? 'Borrower' : 'Student'}: ${borrower} | Req: ${currentRequestData.requestId}`;
+                        await addAuditEntry(isBorrow ? 'Borrow' : 'Dispense', details);
                     }
+                }
+
+                if (skipped.length > 0) {
+                    alert('Released, but these items were NOT deducted from inventory. Please adjust manually:\n\n• ' + skipped.join('\n• '));
                 }
 
                 await loadRequests();
