@@ -171,9 +171,14 @@
     var cacheKey = 'pl-me-' + session.user.id;
     var me = null;
     try { me = JSON.parse(sessionStorage.getItem(cacheKey) || 'null'); } catch (_) { me = null; }
+    var cached = !!me;
     var fresh = db.from('app_users').select('*').eq('id', session.user.id).maybeSingle().then(function (r) {
       if (r.data) sessionStorage.setItem(cacheKey, JSON.stringify(r.data));
-      else if (!r.error) { sessionStorage.removeItem(cacheKey); return db.auth.signOut().then(function () { window.location.reload(); }); }
+      else if (!r.error) {
+        sessionStorage.removeItem(cacheKey);
+        // only when the page was opened from a stale cache; otherwise the caller shows the access message
+        if (cached) return db.auth.signOut().then(function () { window.location.reload(); });
+      }
       return r.data;
     });
     if (!me) me = await fresh;

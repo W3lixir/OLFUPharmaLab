@@ -150,7 +150,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js"></script>
     <script src="js/supabase-client.js"></script>
-    <script src="js/data.js"></script>
+    <script src="js/supabase-data.js"></script>
     <script src="js/auth-guard.js"></script>
     <script src="js/nav-highlighting.js"></script>
     <script>
@@ -179,7 +179,8 @@
             }
         });
 
-        document.getElementById('btn-add-schedule').addEventListener('click', function() {
+        document.getElementById('btn-add-schedule').addEventListener('click', async function() {
+            var btn = this;
             var roomType = document.getElementById('sched-room-type').value;
             var roomId = document.getElementById('sched-room').value;
             var startTime = document.getElementById('sched-start').value;
@@ -196,17 +197,27 @@
                 var start = new Date(startDate + 'T12:00:00');
                 var end = new Date(endDate + 'T12:00:00');
                 if (start > end) { alert('Start date must be before or equal to End date.'); return; }
-                var count = 0;
+                var dates = [];
                 for (var d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
                     var dayOfWeek = d.getDay();
                     if (dayOfWeek === 0) continue;
                     if (daysChecked.indexOf(dayOfWeek) === -1) continue;
                     var dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-                    if (typeof addScheduleEntry === 'function') {
-                        addScheduleEntry({ roomType: roomType, roomId: roomId, date: dateStr, startTime: startTime, endTime: endTime, requestId: undefined });
+                    dates.push(dateStr);
+                }
+                var count = 0;
+                btn.disabled = true;
+                try {
+                    for (var k = 0; k < dates.length; k++) {
+                        await addScheduleEntry({ roomType: roomType, roomId: roomId, date: dates[k], startTime: startTime, endTime: endTime, requestId: undefined });
                         count++;
                     }
+                } catch (err) {
+                    alert('Saved ' + count + ' of ' + dates.length + ' entries, then an error occurred: ' + (err.message || err));
+                    btn.disabled = false;
+                    return;
                 }
+                btn.disabled = false;
                 if (count > 0) {
                     alert('Added ' + count + ' schedule entry/entries (Mon–Sat in date range).');
                     setDefaultDates();
@@ -216,11 +227,14 @@
             } else {
                 var date = document.getElementById('sched-date').value;
                 if (!date) { alert('Select a date.'); return; }
-                if (typeof addScheduleEntry === 'function') {
-                    addScheduleEntry({ roomType: roomType, roomId: roomId, date: date, startTime: startTime, endTime: endTime, requestId: undefined });
+                btn.disabled = true;
+                try {
+                    await addScheduleEntry({ roomType: roomType, roomId: roomId, date: date, startTime: startTime, endTime: endTime, requestId: undefined });
                     alert('Schedule added.');
                     setDefaultDates();
-                }
+                } catch (err) {
+                    alert('Schedule not saved: ' + (err.message || err));
+                } finally { btn.disabled = false; }
             }
         });
     })();

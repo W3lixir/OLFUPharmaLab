@@ -126,7 +126,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js"></script>
     <script src="js/supabase-client.js"></script>
-    <script src="js/data.js"></script>
+    <script src="js/supabase-data.js"></script>
     <script src="js/auth-guard.js"></script>
     <script src="js/nav-highlighting.js"></script>
     <script>
@@ -149,58 +149,67 @@
             return (viewDateEl && viewDateEl.value) ? viewDateEl.value : todayStr();
         }
 
-        function renderRooms() {
+        var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+        var renderSeq = 0;
+
+        async function renderRooms() {
+            var seq = ++renderSeq;
             var dateStr = getViewDate();
-            var todayStrVal = typeof getTodayManilaDateStr === 'function' ? getTodayManilaDateStr() : dateStr;
-            roomsGrid.innerHTML = '';
-            roomNames.forEach(function(name, i) {
+            var todayStrVal = getTodayManilaDateStr();
+            var boxes = await Promise.all(roomNames.map(async function(name, i) {
                 var roomId = String(i + 1);
-                var occupied = typeof isRoomOccupiedOnDate === 'function' && isRoomOccupiedOnDate(ROOM_TYPE, roomId, dateStr);
-                var label = occupied ? 'Occupied' : 'Available';
-                if (occupied && typeof getScheduleForRoom === 'function' && typeof getRequestById === 'function') {
-                    var entries = (dateStr === todayStrVal && typeof getActiveScheduleForRoom === 'function')
-                        ? getActiveScheduleForRoom(ROOM_TYPE, roomId, dateStr)
-                        : getScheduleForRoom(ROOM_TYPE, roomId, dateStr);
-                    if (entries.length > 0) {
-                        var req = getRequestById(entries[0].requestId);
-                        label = req ? (req.activity || req.subject || 'Occupied') : 'Occupied';
+                var label = 'Available', occupied = false;
+                try {
+                    occupied = await isRoomOccupiedOnDate(ROOM_TYPE, roomId, dateStr);
+                    if (occupied) {
+                        label = 'Occupied';
+                        var entries = dateStr === todayStrVal
+                            ? await getActiveScheduleForRoom(ROOM_TYPE, roomId, dateStr)
+                            : await getScheduleForRoom(ROOM_TYPE, roomId, dateStr);
+                        if (entries.length > 0 && entries[0].requestId) {
+                            var req = await getRequestById(entries[0].requestId);
+                            label = req ? (req.activity || req.subject || 'Occupied') : 'Occupied';
+                        }
                     }
-                }
+                } catch (e) { console.error(e); }
+                return { roomId: roomId, name: name, occupied: occupied, label: label };
+            }));
+            if (seq !== renderSeq) return;   // a newer date was picked while loading
+            roomsGrid.innerHTML = '';
+            boxes.forEach(function(b) {
                 var box = document.createElement('div');
-                box.className = 'room-box ' + (occupied ? 'occupied' : 'available');
-                box.setAttribute('data-room-id', roomId);
-                box.innerHTML = '<span>' + name + '</span><span class="room-label">' + label + '</span>';
-                box.onclick = function() {
-                    openDetailsModal(roomId, name, dateStr);
-                };
+                box.className = 'room-box ' + (b.occupied ? 'occupied' : 'available');
+                box.setAttribute('data-room-id', b.roomId);
+                box.innerHTML = '<span>' + esc(b.name) + '</span><span class="room-label">' + esc(b.label) + '</span>';
+                box.onclick = function() { openDetailsModal(b.roomId, b.name, dateStr); };
                 roomsGrid.appendChild(box);
             });
         }
 
-        function openDetailsModal(roomId, roomName, dateStr) {
-            var entries = typeof getActiveScheduleForRoom === 'function' ? getActiveScheduleForRoom(ROOM_TYPE, roomId, dateStr) : [];
+        async function openDetailsModal(roomId, roomName, dateStr) {
             modalDetailsTitle.textContent = roomName + ' — ' + (dateStr || getViewDate());
+            modalDetailsBody.innerHTML = '<p class="empty-msg">Loading…</p>';
+            modalDetails.classList.add('open');
+            var entries = [];
+            try { entries = await getActiveScheduleForRoom(ROOM_TYPE, roomId, dateStr); } catch (e) { console.error(e); }
             if (entries.length === 0) {
                 modalDetailsBody.innerHTML = '<p class="empty-msg">No schedule for this room on this date.</p>';
-            } else {
-                var html = '';
-                entries.forEach(function(entry) {
-                    var req = typeof getRequestById === 'function' ? getRequestById(entry.requestId) : null;
-                    var experimentTitle = req ? (req.activity || req.subject || '—') : '—';
-                    var professor = req ? (req.instructor || '—') : '—';
-                    var studentName = req ? (req.studentName || '—') : '—';
-                    html += '<div class="schedule-card">';
-                    html += '<div class="detail-row"><span class="detail-label">Experiment / Activity</span><div class="detail-value">' + experimentTitle + '</div></div>';
-                    html += '<div class="detail-row"><span class="detail-label">Professor / Instructor</span><div class="detail-value">' + professor + '</div></div>';
-                    html += '<div class="detail-row"><span class="detail-label">Student (requested by)</span><div class="detail-value">' + studentName + '</div></div>';
-                    html += '<div class="detail-row"><span class="detail-label">Start time</span><div class="detail-value">' + (entry.startTime || '—') + '</div></div>';
-                    html += '<div class="detail-row"><span class="detail-label">End time</span><div class="detail-value">' + (entry.endTime || '—') + '</div></div>';
-                    if (req && req.requestId) html += '<div class="detail-row"><span class="detail-label">Request ID</span><div class="detail-value">' + req.requestId + '</div></div>';
-                    html += '</div>';
-                });
-                modalDetailsBody.innerHTML = html;
+                return;
             }
-            modalDetails.classList.add('open');
+            var reqs = await Promise.all(entries.map(function (en) { return en.requestId ? getRequestById(en.requestId).catch(function () { return null; }) : null; }));
+            var html = '';
+            entries.forEach(function(entry, k) {
+                var req = reqs[k];
+                html += '<div class="schedule-card">';
+                html += '<div class="detail-row"><span class="detail-label">Experiment / Activity</span><div class="detail-value">' + esc(req ? (req.activity || req.subject || '—') : '—') + '</div></div>';
+                html += '<div class="detail-row"><span class="detail-label">Professor / Instructor</span><div class="detail-value">' + esc(req ? (req.instructor || '—') : '—') + '</div></div>';
+                html += '<div class="detail-row"><span class="detail-label">Student (requested by)</span><div class="detail-value">' + esc(req ? (req.studentName || '—') : '—') + '</div></div>';
+                html += '<div class="detail-row"><span class="detail-label">Start time</span><div class="detail-value">' + esc(entry.startTime || '—') + '</div></div>';
+                html += '<div class="detail-row"><span class="detail-label">End time</span><div class="detail-value">' + esc(entry.endTime || '—') + '</div></div>';
+                if (req && req.requestId) html += '<div class="detail-row"><span class="detail-label">Request ID</span><div class="detail-value">' + esc(req.requestId) + '</div></div>';
+                html += '</div>';
+            });
+            modalDetailsBody.innerHTML = html;
         }
 
         function closeDetails() {
@@ -217,7 +226,7 @@
 
         renderRooms();
         setInterval(function() {
-            if (typeof getViewDate === 'function' && typeof getTodayManilaDateStr === 'function' && getViewDate() === getTodayManilaDateStr()) {
+            if (getViewDate() === getTodayManilaDateStr()) {
                 renderRooms();
             }
         }, 60000);

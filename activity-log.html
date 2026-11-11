@@ -95,25 +95,28 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js"></script>
     <script src="js/supabase-client.js"></script>
-    <script src="js/data.js"></script>
+    <script src="js/supabase-data.js"></script>
     <script src="js/auth-guard.js"></script>
     <script src="js/nav-highlighting.js"></script>
     <script>
-        (function(){
-            var log = typeof getAuditLog === 'function' ? getAuditLog() : [];
+        (async function(){
             var tbody = document.getElementById('activity-table-body');
             var empty = document.getElementById('activity-empty');
+            var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+            var log = [];
+            try { log = await getAuditLog(); } catch (e) { console.error(e); }
             if (log.length === 0) {
                 tbody.innerHTML = '';
                 empty.style.display = 'block';
             } else {
                 empty.style.display = 'none';
                 tbody.innerHTML = log.map(function(e){
-                    var d = e.date ? new Date(e.date) : new Date();
+                    var d = e.created_at ? new Date(e.created_at) : new Date();
                     var dateStr = d.toLocaleString('en-PH', { timeZone: 'Asia/Manila', dateStyle: 'short', timeStyle: 'medium' });
-                    return '<tr><td>' + dateStr + '</td><td><strong>' + (e.user || '—') + '</strong></td><td>' + (e.action || '—') + '</td><td>' + (e.details || '—') + '</td></tr>';
+                    return '<tr><td>' + dateStr + '</td><td><strong>' + esc(e.user_name || '—') + '</strong></td><td>' + esc(e.action || '—') + '</td><td>' + esc(e.details || '—') + '</td></tr>';
                 }).join('');
             }
+            if (window.RecordTableControls && typeof window.RecordTableControls.refresh === 'function') window.RecordTableControls.refresh();
         })();
     </script>
     <script>(function(){function u(){var e=document.getElementById('sidebar-datetime');if(e)e.textContent=new Date().toLocaleString('en-PH',{timeZone:'Asia/Manila',weekday:'short',year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});}u();setInterval(u,1000);})();</script>

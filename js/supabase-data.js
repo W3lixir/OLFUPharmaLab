@@ -556,7 +556,7 @@ async function getScheduleForRoom(roomType, roomId, dateStr) {
 }
 
 async function addScheduleEntry(entry) {
-  const id = 'sched-' + Date.now();
+  const id = 'sched-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
   const row = {
     id,
     room_type:  entry.roomType,

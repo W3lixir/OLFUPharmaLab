@@ -155,7 +155,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js"></script>
     <script src="js/supabase-client.js"></script>
-    <script src="js/data.js"></script>
+    <script src="js/supabase-data.js"></script>
     <script src="js/auth-guard.js"></script>
     <script src="js/nav-highlighting.js"></script>
     <script>
@@ -186,11 +186,16 @@
             return { start: start, end: today };
         }
 
-        function renderLogs() {
+        var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+
+        async function renderLogs() {
             var period = document.getElementById('period').value;
             var roomFilter = document.getElementById('room-filter').value;
             var range = getDateRange(period);
-            var schedule = typeof getRoomSchedule === 'function' ? getRoomSchedule() : [];
+            var tbodyEl = document.getElementById('logs-body');
+            tbodyEl.innerHTML = '<tr><td colspan="8" class="empty-msg">Loading…</td></tr>';
+            var schedule = [];
+            try { schedule = await getRoomSchedule(); } catch (e) { console.error(e); }
             var entries = schedule.filter(function(e) {
                 if (e.date < range.start || e.date > range.end) return false;
                 if (roomFilter !== 'all') {
@@ -211,15 +216,18 @@
                 return;
             }
 
+            var ids = [...new Set(entries.map(function (e) { return e.requestId; }).filter(Boolean))];
+            var byId = {};
+            await Promise.all(ids.map(async function (id) { try { byId[id] = await getRequestById(id); } catch (_) {} }));
             var rows = entries.map(function(entry) {
-                var req = typeof getRequestById === 'function' ? getRequestById(entry.requestId) : null;
+                var req = entry.requestId ? byId[entry.requestId] : null;
                 var roomName = getRoomName(entry.roomType, entry.roomId);
                 var dateStr = entry.date ? (new Date(entry.date + 'T12:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })) : '—';
                 var experiment = req ? (req.activity || req.subject || '—') : '—';
                 var professor = req ? (req.instructor || '—') : '—';
                 var student = req ? (req.studentName || '—') : '—';
                 var reqId = (req && req.requestId) ? req.requestId : '—';
-                return '<tr><td>' + dateStr + '</td><td>' + roomName + '</td><td>' + (entry.startTime || '—') + '</td><td>' + (entry.endTime || '—') + '</td><td>' + experiment + '</td><td>' + professor + '</td><td>' + student + '</td><td>' + reqId + '</td></tr>';
+                return '<tr><td>' + dateStr + '</td><td>' + esc(roomName) + '</td><td>' + esc(entry.startTime || '—') + '</td><td>' + esc(entry.endTime || '—') + '</td><td>' + esc(experiment) + '</td><td>' + esc(professor) + '</td><td>' + esc(student) + '</td><td>' + esc(reqId) + '</td></tr>';
             });
             tbody.innerHTML = rows.join('');
         }
