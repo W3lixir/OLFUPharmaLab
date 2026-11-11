@@ -16,6 +16,9 @@ async function requireAuth() {
   if (!hasSupabaseAuth()) { toLogin(); return; }
 
   try {
+    // No saved session at all: go to login right away, without waiting for the server.
+    var local = await db.auth.getSession();
+    if (!local.data || !local.data.session) { toLogin(); return; }
     var result = await db.auth.getUser();
     var user = result.data && result.data.user;
     if (!user) { toLogin(); return; }
@@ -33,10 +36,18 @@ async function requireAuth() {
       : user.email;
     setCurrentUser(displayName);
     initAuthUI(displayName, 'Lab Staff');
+    showPage();
   } catch (err) {
     console.error('Auth check failed:', err);
     toLogin();
   }
+}
+
+// Staff pages start hidden (style#auth-pending in <head>) so their content never
+// flashes before the staff check; reveal only once the user is confirmed as staff.
+function showPage() {
+  var s = document.getElementById('auth-pending');
+  if (s) s.remove();
 }
 
 function hasSupabaseAuth() {
