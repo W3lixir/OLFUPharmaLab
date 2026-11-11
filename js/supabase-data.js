@@ -348,9 +348,14 @@ async function getRequestItemsForDropdown() {
 
 /* ── Sections / Courses / Subjects / Experiments / Instructors */
 
+// "Group 2" before "Group 10": compare numbers inside names as numbers.
+function naturalByName(list) {
+  return (list || []).sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), undefined, { numeric: true, sensitivity: 'base' }));
+}
+
 async function getSections() {
-  const { data } = await db.from('sections').select('*').order('name');
-  return data || [];
+  const { data } = await db.from('sections').select('*');
+  return naturalByName(data);
 }
 
 async function getCourses() {
@@ -484,8 +489,8 @@ async function updateBreakageDates(id, dateOccurred, dateResolved) {
 /* ── Year Levels ────────────────────────────────────────────── */
 
 async function getYearLevels() {
-  const { data } = await db.from('year_levels').select('*').order('name');
-  return data || [];
+  const { data } = await db.from('year_levels').select('*');
+  return naturalByName(data);
 }
 
 /* ── Inventory History ──────────────────────────────────────── */
@@ -514,8 +519,8 @@ async function saveItemHistory(chemicalId, entries) {
 /* ── Groups ─────────────────────────────────────────────────── */
 
 async function getGroups() {
-  const { data } = await db.from('groups').select('*').order('name');
-  return data || [];
+  const { data } = await db.from('groups').select('*');
+  return naturalByName(data);
 }
 
 /* ── Room Schedule ──────────────────────────────────────────── */
