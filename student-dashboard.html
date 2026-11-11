@@ -1,6 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+    <style id="rq-pending">main.main-content{visibility:hidden}</style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Portal - PharmaLab</title>
@@ -422,6 +423,7 @@
 
         (async function () {
             const me = await requireRequester();
+            document.getElementById('rq-pending')?.remove();
             if (me.full_name) document.getElementById('welcome-title').textContent = 'Hi, ' + me.full_name.split(' ')[0] + '!';
             try {
                 myRequests = await getMyRequests();

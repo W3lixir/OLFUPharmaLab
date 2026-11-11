@@ -1083,6 +1083,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     try { restored = await restoreDraft(); } catch (err) { console.warn('Draft not restored:', err); }
     if (currentStep === 1) maybeCompactStep1();
     document.body.dataset.requesterReady = '1';
+    document.getElementById('rq-pending')?.remove();   // reveal the form only once it is filled in
 
     // Auto-save the draft on every change; discard it on request.
     const form = document.querySelector('.request-form');
