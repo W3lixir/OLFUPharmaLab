@@ -104,9 +104,11 @@ async function getRequestById(requestId) {
   return data ? toClientRequest(data) : null;
 }
 
+// New requests are a plain insert: the public form may add a request but never read,
+// overwrite or remove existing ones (the database only grants INSERT to visitors).
 async function saveRequest(req) {
   const row = toDbRequest(req);
-  const { error } = await db.from('requests').upsert(row, { onConflict: 'request_id' });
+  const { error } = await db.from('requests').insert(row);
   if (error) throw error;
 }
 
