@@ -241,17 +241,6 @@
                 <div id="kit-preview"></div>
             </section>
 
-            <section class="settings-list kit-card" style="max-height:none;margin-top:24px;" aria-labelledby="kit-link-title">
-                <h3 id="kit-link-title">Link materials to inventory</h3>
-                <p class="kit-muted">Materials that are not linked are still requested, but not deducted automatically on release. Pick the inventory item once and every experiment that uses that name is linked. Generic names like "Beaker" need you to choose the size the lab normally gives.</p>
-                <div class="kit-link-toolbar">
-                    <label for="kit-link-filter" class="filter-label">Find</label>
-                    <input type="search" id="kit-link-filter" class="filter-select" placeholder="e.g. beaker, pipette">
-                    <span class="kit-muted" id="kit-link-summary" role="status" aria-live="polite"></span>
-                </div>
-                <div id="kit-unlinked" class="kit-table-wrap"></div>
-            </section>
-
             <section class="settings-list kit-card" style="max-height:none;margin-top:24px;" aria-labelledby="kit-edit-title">
                 <h3 id="kit-edit-title">Materials per experiment</h3>
                 <label class="filter-label" for="kit-subject" style="display:block;margin-bottom:6px;">Subject</label>
@@ -261,6 +250,17 @@
                     <div id="kit-editor" class="kit-editor"></div>
                 </div>
                 <datalist id="kit-inventory-list"></datalist>
+            </section>
+
+            <section class="settings-list kit-card" style="max-height:none;margin-top:24px;" aria-labelledby="kit-link-title">
+                <h3 id="kit-link-title">Link materials to inventory</h3>
+                <p class="kit-muted">Materials that are not linked are still requested, but not deducted automatically on release. Pick the inventory item once and every experiment that uses that name is linked. Generic names like "Beaker" need you to choose the size the lab normally gives.</p>
+                <div class="kit-link-toolbar">
+                    <label for="kit-link-filter" class="filter-label">Find</label>
+                    <input type="search" id="kit-link-filter" class="filter-select" placeholder="e.g. beaker, pipette">
+                    <span class="kit-muted" id="kit-link-summary" role="status" aria-live="polite"></span>
+                </div>
+                <div id="kit-unlinked" class="kit-table-wrap"></div>
             </section>
         </div>
 
@@ -740,7 +740,7 @@
                 visible.map(e => {
                     const subj = subjects.find(s => s.id === e.subject_id);
                     const hidden = e.active === false;
-                    return `<div class="settings-item ${hidden ? 'is-hidden' : ''}"><div><div class="name">${escapeHtml(experimentLabel(e))}</div><div class="meta">Subject: ${escapeHtml(subj ? subjectLabel(subj) : '—')}${hidden ? ' · Hidden from request form' : ''}</div></div><div class="item-actions">${editBtn('editExperiment', e.id)}<button class="btn-toggle" onclick="setActive('experiments','${e.id}',${hidden})">${hidden ? 'Show' : 'Hide'}</button><button onclick="removeExperiment('${e.id}')">Remove</button></div></div>`;
+                    return `<div class="settings-item ${hidden ? 'is-hidden' : ''}"><div><div class="name">${escapeHtml(experimentLabel(e))}</div><div class="meta">Subject: ${escapeHtml(subj ? subjectLabel(subj) : '—')}${hidden ? ' · Hidden from request form' : ''}</div></div><div class="item-actions"><button onclick="openKitMaterials('${e.subject_id}','${e.id}')">Materials</button>${editBtn('editExperiment', e.id)}<button class="btn-toggle" onclick="setActive('experiments','${e.id}',${hidden})">${hidden ? 'Show' : 'Hide'}</button><button onclick="removeExperiment('${e.id}')">Remove</button></div></div>`;
                 }).join('');
         }
 

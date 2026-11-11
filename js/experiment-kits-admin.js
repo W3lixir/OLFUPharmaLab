@@ -310,6 +310,17 @@
     }
   }
 
+  // Jump from Settings → Experiments to this experiment's materials editor.
+  window.openKitMaterials = async function (subjectId, expId) {
+    const tab = document.querySelector('.settings-tab[data-panel="kits"]');
+    if (tab) tab.click();
+    $('kit-subject').value = subjectId;
+    await renderExperimentList();
+    const exp = (await getExperimentsBySubject(subjectId, true)).find(x => x.id === expId);
+    if (exp) await openExperiment(exp);
+    ($('kit-editor') || $('kit-subject')).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   /* ═════════════ init ═════════════ */
   /* ═════════════ 3. BULK LINK UNLINKED MATERIALS ═════════════ */
 
