@@ -1,6 +1,7 @@
 /** Search, column filters, and sorting for record tables, including async rerenders. */
 (function () {
     const states = new Map();
+    const PAGE = 20;
     const collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
     const selector = 'main table.table, main table.data-table, main table.logs-table';
     const observer = new MutationObserver(refresh);
@@ -42,8 +43,15 @@
             });
             rows.forEach(row => state.table.tBodies[0].appendChild(row));
         }
-        const visible = rows.filter(row => !row.hidden).length;
-        state.count.textContent = visible + ' of ' + rows.length + ' records';
+        // Show the first PAGE matches; "See more" adds the next PAGE. Search/filters still cover every row.
+        const matches = rows.filter(row => !row.hidden);
+        const visible = matches.length;
+        const order = Array.from(state.table.tBodies[0].rows).filter(row => matches.includes(row));
+        order.forEach((row, i) => { if (i >= state.limit) row.hidden = true; });
+        const shown = Math.min(visible, state.limit);
+        state.count.textContent = (shown < visible ? 'Showing ' + shown + ' of ' + visible : visible + ' of ' + rows.length) + ' records';
+        state.more.hidden = shown >= visible;
+        state.more.textContent = 'See more (' + Math.min(PAGE, visible - shown) + ' of ' + (visible - shown) + ' remaining)';
         state.empty.hidden = !rows.length || !!visible;
         observe();
     }
@@ -61,7 +69,7 @@
     function refresh() {
         observer.disconnect();
         states.forEach(state => {
-            if (!state.table.isConnected) { state.bar.remove(); state.empty.remove(); }
+            if (!state.table.isConnected) { state.bar.remove(); state.empty.remove(); state.more.remove(); }
         });
         document.querySelectorAll(selector).forEach((table, tableIndex) => {
             if (table.closest('[role="dialog"], .modal, .lab-modal')) return;
@@ -83,16 +91,20 @@
                 const count = document.createElement('span'); count.setAttribute('aria-live', 'polite');
                 const empty = document.createElement('p'); empty.className = 'no-print'; empty.textContent = 'No records match the table filters.'; empty.hidden = true;
                 bar.append(labelControl('Quick Search', search), labelControl('Filter Column', column), labelControl('Filter Value', value), labelControl('Sort By', sort), labelControl('Order', direction), reset, count);
-                state = { table, headers, bar, search, column, value, sort, direction, count, empty };
+                const more = document.createElement('button'); more.type = 'button'; more.className = 'btn btn-secondary no-print record-see-more'; more.hidden = true;
+                more.style.cssText = 'display:block;margin:12px auto;';
+                state = { table, headers, bar, search, column, value, sort, direction, count, empty, more, limit: PAGE };
                 states.set(key, state);
-                search.addEventListener('input', () => apply(state));
-                column.addEventListener('change', () => { state.value.value = ''; values(state); apply(state); });
-                [value, sort, direction].forEach(el => el.addEventListener('change', () => apply(state)));
+                const again = () => { state.limit = PAGE; apply(state); };
+                more.addEventListener('click', () => { state.limit += PAGE; apply(state); });
+                search.addEventListener('input', again);
+                column.addEventListener('change', () => { state.value.value = ''; values(state); again(); });
+                [value, sort, direction].forEach(el => el.addEventListener('change', again));
                 reset.addEventListener('click', () => {
                     search.value = ''; column.value = '-1'; value.value = ''; sort.value = '-1'; direction.value = 'asc';
                     // Restore the original order from the latest page render.
                     state.originalRows.forEach(row => state.table.tBodies[0].appendChild(row));
-                    values(state); apply(state);
+                    state.limit = PAGE; values(state); apply(state);
                 });
             }
             state.table = table;
@@ -101,10 +113,14 @@
             const container = table.closest('.table-container') || table;
             if (container.previousElementSibling !== state.bar) container.before(state.bar);
             if (container.nextElementSibling !== state.empty) container.after(state.empty);
+            if (state.empty.nextElementSibling !== state.more) state.empty.after(state.more);
             values(state); apply(state);
         });
         observer.takeRecords();
         observe();
     }
+    // Print the full filtered list, not just the rows shown on screen.
+    window.addEventListener('beforeprint', () => states.forEach(st => { st.savedLimit = st.limit; st.limit = Infinity; apply(st); }));
+    window.addEventListener('afterprint', () => states.forEach(st => { st.limit = st.savedLimit || PAGE; apply(st); }));
     refresh();
 })();
