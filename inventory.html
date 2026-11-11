@@ -12,6 +12,7 @@
         .expiry-warning { color: var(--lab-warning); font-weight: 600; }
         .expiry-danger { color: var(--lab-danger); font-weight: 600; }
 </style>
+    <link rel="stylesheet" href="css/clay-theme.css">
 </head>
 <body>
     <!-- Top Navigation -->
@@ -89,7 +90,7 @@
             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                 <button type="button" class="btn btn-export" id="btn-import" title="Bulk import from JSON">📥 Import</button>
                 <button type="button" class="btn btn-export" id="btn-export">📊 Export Excel</button>
-                <button type="button" class="btn btn-export" id="btn-delete" title="Bulk delete items" style="color:#ef4444;">🗑️ Delete</button>
+                <button type="button" class="btn btn-danger" id="btn-delete" title="Bulk delete items">🗑️ Delete</button>
                 <button type="button" class="btn btn-primary" id="btn-add-chemical">➕ Add Chemical</button>
             </div>
         </div>
@@ -218,7 +219,7 @@
                         <!-- Items will be rendered here -->
                     </div>
                     <div class="lab-modal-actions" style="margin-top: 16px;">
-                        <button type="button" class="btn btn-danger" id="delete-confirm" style="background: #ef4444;">🗑️ Delete Selected</button>
+                        <button type="button" class="btn btn-danger" id="delete-confirm">🗑️ Delete Selected</button>
                         <button type="button" class="btn btn-secondary" id="delete-cancel">Cancel</button>
                     </div>
                 </div>
@@ -236,7 +237,7 @@
             var fmt = function (s) { return s ? new Date(s).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'; };
 
             var categoryBadgeColors = {
-                'Liquid Reagent': '#3b82f6',
+                'Liquid Reagent': '#7F66D3',
                 'Solid Reagent': '#8b5cf6',
                 'Glassware': '#06b6d4',
                 'Equipment': '#f59e0b',
@@ -307,11 +308,11 @@
                     '</div>' +
 
                     // Acquisition
-                    '<div style="display:flex;flex-direction:column;align-items:center;padding:14px 16px;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:8px;">' +
-                    '<div style="font-size:10px;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">Acquisition' + (unit ? ' (' + unit + ')' : '') + '</div>' +
+                    '<div style="display:flex;flex-direction:column;align-items:center;padding:14px 16px;background:#F3EFFC;border:1.5px solid #bfdbfe;border-radius:8px;">' +
+                    '<div style="font-size:10px;font-weight:700;color:#6E52C4;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">Acquisition' + (unit ? ' (' + unit + ')' : '') + '</div>' +
                     '<div style="font-size:10px;color:#9ca3af;margin-bottom:10px;">' + semLabel + '</div>' +
                     '<input type="number" id="hist-sem-acquisition" value="' + semAcq + '" min="0" step="any" oninput="updateHistoryChart()" ' +
-                    'style="width:100%;padding:10px 12px;border:1.5px solid #bfdbfe;border-radius:6px;font-size:22px;font-weight:700;font-family:inherit;text-align:center;color:#2563eb;">' +
+                    'style="width:100%;padding:10px 12px;border:1.5px solid #bfdbfe;border-radius:6px;font-size:22px;font-weight:700;font-family:inherit;text-align:center;color:#6E52C4;">' +
                     '</div>' +
 
                     '</div>' +
@@ -340,8 +341,8 @@
                         datasets: [{
                             label: semLabel,
                             data: [prevTotal, conTotal, acqTotal],
-                            backgroundColor: ['rgba(22,163,74,0.15)', 'rgba(220,38,38,0.15)', 'rgba(37,99,235,0.15)'],
-                            borderColor: ['#16a34a', '#dc2626', '#2563eb'],
+                            backgroundColor: ['rgba(22,163,74,0.15)', 'rgba(220,38,38,0.15)', 'rgba(110,82,196,0.15)'],
+                            borderColor: ['#16a34a', '#dc2626', '#6E52C4'],
                             borderWidth: 2,
                             borderRadius: 6,
                             borderSkipped: false,
@@ -528,7 +529,7 @@
                         '<div style="font-size:10px;font-weight:700;color:var(--lab-text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:12px;">Consumption &amp; Acquisition — Semester History</div>' +
                         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
                         '<div class="lab-form-group"><label class="lab-form-label" style="color:#dc2626;">Consumption</label><input type="number" id="chem-sem-consumption" class="lab-form-input" step="any" value="0" placeholder="0" style="border-color:#fecaca;color:#dc2626;font-weight:700;"></div>' +
-                        '<div class="lab-form-group"><label class="lab-form-label" style="color:#2563eb;">Acquisition</label><input type="number" id="chem-sem-acquisition" class="lab-form-input" step="any" value="0" placeholder="0" style="border-color:#bfdbfe;color:#2563eb;font-weight:700;"></div>' +
+                        '<div class="lab-form-group"><label class="lab-form-label" style="color:#6E52C4;">Acquisition</label><input type="number" id="chem-sem-acquisition" class="lab-form-input" step="any" value="0" placeholder="0" style="border-color:#bfdbfe;color:#6E52C4;font-weight:700;"></div>' +
                         '</div>' +
                         '</div>' +
                         '<div class="lab-modal-actions">' +

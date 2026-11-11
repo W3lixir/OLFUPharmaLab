@@ -392,6 +392,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
     <script src="js/supabase-data.js"></script>
+    <script src="js/auth-guard.js"></script>
     <script>
         // Recalculate for every print, including Ctrl+P, after request items load.
         window.addEventListener('beforeprint', function () {
@@ -464,7 +465,8 @@
             document.getElementById('print-date-needed').textContent = '\u00A0' + (dateNeeded || '—').toUpperCase();
             var roomName = (req.roomAssignmentName || req.laboratory || 'AMS 204').toUpperCase();
             document.getElementById('print-room-assignment').textContent = '\u00A0' + roomName;
-            document.getElementById('print-notes').textContent = req.remarks ? req.remarks : ' ';
+            var groupsLine = req.groupCount ? 'Groups: ' + req.groupCount + (req.studentCount ? ' (' + req.studentCount + ' students)' : '') : '';
+            document.getElementById('print-notes').textContent = [groupsLine, req.remarks || ''].filter(Boolean).join('\n') || ' ';
             document.getElementById('print-footer-date').textContent = new Date().toLocaleDateString('en-US');
             document.getElementById('print-footer-id').textContent = requestId;
             var tbody = document.getElementById('print-items-body');
@@ -475,9 +477,12 @@
                 (req.items || []).forEach(function(item) {
                     var tr = document.createElement('tr');
                     tr.innerHTML = '<td style="text-align:center;"><span class="checkbox"></span></td><td></td><td style="text-align:center;"></td><td></td><td>__________</td><td>__________</td>';
+                    var asNeeded = item.quantity === '' || item.quantity == null;
                     tr.children[1].textContent = item.name || '';
-                    tr.children[2].textContent = item.quantity || '';
-                    tr.children[3].textContent = item.unit || '';
+                    tr.children[2].textContent = asNeeded ? 'as needed' : item.quantity;
+                    tr.children[3].textContent = asNeeded ? '' : (item.unit || '');
+                    if (item.substituteFor) tr.children[5].textContent = 'Subst. for ' + item.substituteFor;
+                    else if (item.source === 'additional') tr.children[5].textContent = 'Additional';
                     tbody.appendChild(tr);
                 });
             }

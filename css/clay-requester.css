@@ -1,0 +1,233 @@
+/**
+ * PharmaLab — Light violet claymorphism for requester-facing pages
+ * (material-request, student-dashboard / My Requests, qr-landing, public lab report forms).
+ * Loaded last in <head> so it overrides each page's embedded styles.
+ */
+:root {
+  --c-primary: #6E52C4;
+  --c-primary-hover: #5B41AE;
+  --c-primary-light: #E9E2FA;
+  --c-tint: #F3EFFC;
+  --c-surface: #FCFBFF;
+  --c-field: #F8F5FE;
+  --c-border: #E6DFF4;
+  --c-text: #2E2645;
+  --c-muted: #675F82;
+  --c-out: 10px 10px 24px rgba(98, 74, 170, 0.13), -8px -8px 20px rgba(255, 255, 255, 0.85);
+  --c-out-sm: 5px 5px 12px rgba(98, 74, 170, 0.12), -4px -4px 10px rgba(255, 255, 255, 0.85);
+  --c-in: inset 2px 2px 5px rgba(255, 255, 255, 0.9), inset -3px -3px 8px rgba(98, 74, 170, 0.07);
+  --c-press: inset 3px 3px 7px rgba(98, 74, 170, 0.12), inset -3px -3px 7px rgba(255, 255, 255, 0.95);
+  --c-btn: 6px 6px 14px rgba(98, 74, 170, 0.3), inset 2px 2px 4px rgba(255, 255, 255, 0.3), inset -2px -2px 5px rgba(48, 28, 120, 0.25);
+  --c-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+body, body.public-report {
+  background: linear-gradient(160deg, #F6F2FD 0%, #EFEAFA 55%, #ECE6F9 100%) fixed !important;
+  color: var(--c-text);
+}
+
+/* ── Clay cards ── */
+.request-container, .landing-container, .report-form-card,
+.section-card, .action-card, .welcome-banner, .result-card.show,
+.report-choices a, .request-item {
+  background: var(--c-surface) !important;
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--c-out), var(--c-in) !important;
+  color: var(--c-text);
+}
+.action-card, .request-item, .report-choices a { border-radius: 18px !important; box-shadow: var(--c-out-sm), var(--c-in) !important; transition: transform .15s var(--c-ease), box-shadow .15s var(--c-ease); }
+.action-card:hover, .request-item:hover, .report-choices a:hover { transform: translateY(-2px); box-shadow: var(--c-out), var(--c-in) !important; }
+
+/* ── Request form header & My Requests banner ── */
+.request-header {
+  background: linear-gradient(145deg, #F1EBFD, #E6DDF9) !important;
+  color: var(--c-text) !important;
+  border-bottom: 1px solid var(--c-border);
+}
+.request-title, .welcome-banner h1, .confirmation-title { color: var(--c-text) !important; }
+.request-subtitle, .welcome-banner p, .confirmation-text { color: var(--c-muted) !important; opacity: 1 !important; }
+.welcome-banner { background: linear-gradient(145deg, #F4EFFE, #EAE2FA) !important; }
+
+/* ── Progress steps ── */
+.progress-bar::before { background: var(--c-border) !important; }
+.progress-circle { background: var(--c-field) !important; color: var(--c-muted) !important; border: 0 !important; box-shadow: var(--c-out-sm), var(--c-in) !important; }
+.progress-step.active .progress-circle { background: linear-gradient(145deg, #7D62D2, #6247BC) !important; color: #fff !important; box-shadow: var(--c-btn) !important; }
+.progress-step.completed .progress-circle { background: #E5F5EC !important; color: #23845A !important; }
+.progress-step.active .progress-label { color: var(--c-primary-hover) !important; }
+
+/* ── Fields: pressed clay ── */
+.form-input, .form-select, .form-textarea, .track-input,
+.report-form-card input, .report-form-card select, .report-form-card textarea,
+.request-form input[type="time"], .request-form input[type="date"] {
+  background: var(--c-field) !important;
+  border: 1px solid var(--c-border) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--c-press) !important;
+  color: var(--c-text) !important;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus, .track-input:focus,
+.report-form-card input:focus, .report-form-card select:focus, .report-form-card textarea:focus {
+  outline: none !important;
+  border-color: #A896E2 !important;
+  box-shadow: var(--c-press), 0 0 0 3px rgba(110, 82, 196, 0.22) !important;
+}
+.form-input[readonly] { color: var(--c-muted) !important; }
+.report-form-card fieldset { border: 1px solid var(--c-border) !important; border-radius: 18px !important; background: rgba(255, 255, 255, 0.5); }
+.report-form-card legend { color: var(--c-primary-hover) !important; }
+
+/* ── Requester type toggle ── */
+.requester-option { border-radius: 16px !important; border: 1px solid var(--c-border) !important; background: var(--c-surface) !important; box-shadow: var(--c-out-sm), var(--c-in) !important; color: var(--c-text) !important; }
+.requester-option.active { border-color: #A896E2 !important; background: var(--c-tint) !important; color: var(--c-primary-hover) !important; }
+
+/* ── Items ── */
+.item-row { background: var(--c-tint) !important; border: 1px solid var(--c-border) !important; border-radius: 18px !important; box-shadow: var(--c-in) !important; }
+
+/* ── Buttons ── */
+.btn, .start-button, .report-form-card button { border-radius: 14px !important; transition: transform .15s var(--c-ease), background-color .15s var(--c-ease); }
+.btn-primary, .start-button, .report-form-card button:not(.btn-secondary) {
+  background: linear-gradient(145deg, #7D62D2, #6247BC) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: var(--c-btn) !important;
+}
+.btn-primary:hover, .start-button:hover, .report-form-card button:not(.btn-secondary):hover { background: linear-gradient(145deg, #7258CA, #563DAE) !important; }
+.btn:active, .start-button:active { transform: translateY(1px); }
+.btn-secondary, .btn-add {
+  background: var(--c-surface) !important;
+  color: var(--c-primary-hover) !important;
+  border: 1px solid var(--c-border) !important;
+  box-shadow: var(--c-out-sm), var(--c-in) !important;
+}
+.btn-remove { border-radius: 12px !important; }
+
+/* ── Info boxes ── */
+.info-box { background: var(--c-tint) !important; border: 1px solid var(--c-border) !important; border-left: 0 !important; border-radius: 16px !important; box-shadow: var(--c-in) !important; }
+.info-box-title { color: var(--c-primary-hover) !important; }
+.info-box-text { color: var(--c-muted) !important; }
+.reference-number { background: var(--c-tint) !important; border: 1px solid var(--c-border) !important; border-radius: 18px !important; box-shadow: var(--c-press) !important; }
+.reference-value, .result-ref-value, .req-id { color: var(--c-primary-hover) !important; }
+.report-heading { background: var(--c-tint) !important; border-left: 0 !important; border-radius: 18px !important; box-shadow: var(--c-in) !important; }
+.report-eyebrow, .report-choices .choice-arrow { color: var(--c-primary) !important; }
+.report-brand-badge { color: var(--c-primary-hover) !important; background: var(--c-primary-light) !important; border-radius: 999px !important; }
+
+/* ── Status badges ── */
+.status-badge { border-radius: 999px !important; }
+.status-badge.pending  { background: #FDF0DC !important; color: #8F5208 !important; }
+.status-badge.approved { background: #E8EEFB !important; color: #3E68C4 !important; }
+.status-badge.released { background: #E9E2FA !important; color: #5B41AE !important; }
+.status-badge.returned { background: #EFEDF5 !important; color: #575170 !important; }
+.status-badge.rejected { background: #FCE8EC !important; color: #C23A52 !important; }
+
+/* ── Top bar on My Requests ── */
+.top-nav { background: rgba(252, 251, 255, 0.92) !important; border-bottom: 1px solid var(--c-border) !important; box-shadow: 0 6px 20px rgba(98, 74, 170, 0.08) !important; }
+
+/* ── Signed-in bar (requester-auth.js) ── */
+.rq-userbar { background: var(--c-tint) !important; border-bottom: 1px solid var(--c-border) !important; color: var(--c-text) !important; }
+.rq-userbar a, .rq-userbar button { color: var(--c-primary-hover) !important; }
+
+:focus-visible { outline: 3px solid rgba(110, 82, 196, 0.45); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+/* ── Beta notice: soft amber, and keep it from covering the page ── */
+body > div[style*="FCD34D"] {
+  background: #FDF0DC !important;
+  border-bottom: 1px solid #F3DDB8 !important;
+  color: #7A4706 !important;
+  font-weight: 500 !important;
+  box-shadow: 0 4px 14px rgba(168, 98, 12, 0.08);
+}
+body:has(> div[style*="FCD34D"]) { padding-top: 72px !important; align-items: flex-start !important; }
+
+/* ── QR landing page ── */
+.lab-info { background: var(--c-tint) !important; border-radius: 18px !important; box-shadow: var(--c-press) !important; }
+.lab-name { color: var(--c-primary-hover) !important; }
+.landing-container a:not(.start-button) { color: var(--c-primary-hover); text-underline-offset: 3px; }
+.welcome-title { color: var(--c-text) !important; }
+
+/* ── Signed-in bar inside My Requests content ── */
+.main-content > .rq-userbar { border: 1px solid var(--c-border) !important; border-radius: 18px; margin-bottom: 20px; box-shadow: var(--c-press); }
+
+/* Header banner artwork */
+.page-banner { display: block; width: 100%; height: auto; aspect-ratio: 2172 / 280; object-fit: cover; border-radius: 18px; box-shadow: var(--c-out-sm); margin: 0 0 20px; }
+.request-header .page-banner { margin: 0 0 20px; }
+
+/* ════════════════════════════════════════════════════════════
+   PHONE (students request from their phones after scanning QR)
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* Inputs: 16px text stops iPhone auto-zoom; 48px tall for thumbs */
+  .form-input, .form-select, .form-textarea, .track-input,
+  .report-form-card input, .report-form-card select, .report-form-card textarea {
+    font-size: 16px !important;
+    min-height: 48px;
+  }
+  .form-textarea { min-height: 96px; }
+  .form-label { font-size: 14px !important; }
+
+  /* Beta notice: one compact line */
+  body > div[style*="FCD34D"] { font-size: 12px !important; padding: 8px 12px !important; line-height: 1.35 !important; }
+  body:has(> div[style*="FCD34D"]) { padding: 52px 8px 24px !important; }
+
+  /* Request form: use the full width, tighter header */
+  .request-container { border-radius: 20px !important; }
+  .request-header { padding: 16px 16px 20px !important; }
+  .request-header .page-banner { border-radius: 12px; margin-bottom: 14px; }
+  .request-title { font-size: 22px !important; line-height: 1.2 !important; }
+  .request-subtitle { font-size: 13px !important; }
+  .request-form { padding: 20px 16px 0 !important; }
+  .section-title { font-size: 19px !important; }
+  .progress-bar { margin-bottom: 24px !important; }
+  .progress-circle { width: 34px !important; height: 34px !important; font-size: 14px !important; }
+  .progress-label { font-size: 11px !important; }
+  .info-box { padding: 12px 14px !important; }
+
+  /* Every two-column row stacks */
+  .form-row, .item-row,
+  .request-form div[style*="grid-template-columns:1fr 1fr"],
+  .request-form div[style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; gap: 0 !important; }
+  .item-row { padding: 14px !important; gap: 4px !important; }
+  .item-row .btn-remove { width: 44px; height: 44px; min-height: 44px; justify-self: end; margin-top: 4px; }
+  .btn-add { width: 100%; min-height: 48px; justify-content: center; }
+
+  /* Next / Back / Submit: sticky at the bottom, big thumb targets */
+  .form-actions {
+    position: sticky; bottom: 0; z-index: 5;
+    margin: 24px -16px 0 !important; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) !important;
+    background: rgba(252, 251, 255, 0.96) !important;
+    border-top: 1px solid var(--c-border) !important;
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0 -8px 20px rgba(98, 74, 170, 0.08);
+    gap: 10px;
+  }
+  .form-actions .btn { flex: 1; min-height: 50px; justify-content: center; font-size: 16px !important; }
+
+  /* Success screen buttons stack */
+  .confirmation .btn { width: 100%; justify-content: center; min-height: 48px; margin: 6px 0 !important; }
+
+  /* Signed-in bar: compact, links as tappable chips */
+  .rq-userbar { padding: 10px 14px !important; font-size: 12px !important; }
+  .rq-userbar .rq-links { width: 100%; gap: 8px !important; }
+  .rq-userbar .rq-links a, .rq-userbar .rq-links button {
+    flex: 1; text-align: center; padding: 9px 6px !important; min-height: 38px;
+    background: var(--c-surface) !important; border-radius: 12px !important; box-shadow: var(--c-out-sm);
+    font-size: 13px !important;
+  }
+
+  /* My Requests */
+  .main-content { padding: 16px 12px 32px !important; }
+  .welcome-banner { padding: 20px !important; }
+  .welcome-banner h1 { font-size: 22px !important; }
+  .section-card { padding: 18px 14px !important; }
+  .request-item { padding: 14px !important; gap: 10px; align-items: flex-start !important; }
+  .req-desc { font-size: 13px !important; }
+  .result-card.show { padding: 16px !important; }
+  .items-table th, .items-table td { padding: 8px 6px !important; font-size: 13px; }
+
+  /* Public report forms */
+  body.public-report { padding: 12px 8px !important; }
+  .report-form-card { padding: 20px 16px !important; border-radius: 20px !important; }
+  .report-form-card button { width: 100%; min-height: 50px; }
+}

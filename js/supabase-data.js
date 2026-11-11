@@ -112,6 +112,36 @@ async function saveRequest(req) {
   if (error) throw error;
 }
 
+// Requester submissions: plain insert (requesters have no UPDATE rights, so no upsert).
+// The DB trigger stamps requester_id / requester_email / status for students and professors.
+async function insertRequest(req) {
+  const { error } = await db.from('requests').insert(toDbRequest(req));
+  if (error) throw error;
+}
+
+// RLS limits this to the signed-in requester's own rows.
+async function getMyRequests() {
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) return [];
+  const { data, error } = await db.from('requests').select('*')
+    .eq('requester_id', user.id)
+    .order('date_submitted', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(toClientRequest);
+}
+
+async function saveMyProfile(profile) {
+  const { error } = await db.rpc('save_my_profile', { p: profile });
+  if (error) throw error;
+}
+
+// Item names/units/categories for the request form (no stock levels).
+async function getRequestItemOptions() {
+  const { data, error } = await db.rpc('request_item_options');
+  if (error) throw error;
+  return data || [];
+}
+
 async function updateRequestStatus(requestId, status, extra = {}) {
   const { error } = await db.from('requests')
     .update({ status, ...extra })
@@ -156,6 +186,10 @@ function toClientRequest(row) {
     dateSubmitted:      row.date_submitted,
     laboratory:         row.laboratory,
     rejectionReason:    row.rejection_reason,
+    requesterEmail:     row.requester_email || '',
+    experimentId:       row.experiment_id || '',
+    groupCount:         row.group_count || null,
+    studentCount:       row.student_count || null,
   };
 }
 
@@ -186,6 +220,9 @@ function toDbRequest(req) {
     date_submitted:       req.dateSubmitted || new Date().toISOString(),
     laboratory:           req.laboratory,
     rejection_reason:     req.rejectionReason || null,
+    experiment_id:        req.experimentId || null,
+    group_count:          req.groupCount ? Number(req.groupCount) : null,
+    student_count:        req.studentCount ? Number(req.studentCount) : null,
   };
 }
 
@@ -321,26 +358,58 @@ async function getCourses() {
   return data || [];
 }
 
-async function getSubjects() {
-  const { data } = await db.from('subjects').select('*').order('name');
-  return data || [];
+// Subjects/experiments hidden in Settings (active = false) are left out of the request form.
+const sortSubjects = list => (list || []).sort((a, b) =>
+  String(a.code || a.name || '').localeCompare(String(b.code || b.name || '')));
+const sortExperiments = list => (list || []).sort((a, b) =>
+  (a.sort_order ?? 9999) - (b.sort_order ?? 9999) || String(a.name || '').localeCompare(String(b.name || '')));
+const isActive = r => r.active !== false;
+
+async function getSubjects(includeInactive = false) {
+  const { data } = await db.from('subjects').select('*');
+  return sortSubjects((data || []).filter(r => includeInactive || isActive(r)));
+}
+
+function subjectLabel(s) {
+  if (!s) return '';
+  return s.code && s.name && s.name.toUpperCase() !== s.code.toUpperCase() ? `${s.code} · ${s.name}` : (s.code || s.name);
+}
+function experimentLabel(e) {
+  if (!e) return '';
+  return e.exp_no ? `Exp ${e.exp_no} · ${e.name}` : e.name;
 }
 
 async function getSubjectsByCourse(courseId) {
   if (!courseId) return getSubjects();
-  const { data } = await db.from('subjects').select('*').eq('course_id', courseId).order('name');
+  const { data } = await db.from('subjects').select('*').eq('course_id', courseId);
+  return sortSubjects((data || []).filter(isActive));
+}
+
+async function getExperiments(includeInactive = false) {
+  const { data } = await db.from('experiments').select('*');
+  return sortExperiments((data || []).filter(r => includeInactive || isActive(r)));
+}
+
+async function getExperimentsBySubject(subjectId, includeInactive = false) {
+  if (!subjectId) return getExperiments(includeInactive);
+  const { data } = await db.from('experiments').select('*').eq('subject_id', subjectId);
+  return sortExperiments((data || []).filter(r => includeInactive || isActive(r)));
+}
+
+/* ── Experiment kits (materials per experiment) ─────────────── */
+
+async function getExperimentItems(experimentId) {
+  if (!experimentId) return [];
+  const { data, error } = await db.from('experiment_items').select('*')
+    .eq('experiment_id', experimentId).order('sort_order');
+  if (error) throw error;
   return data || [];
 }
 
-async function getExperiments() {
-  const { data } = await db.from('experiments').select('*').order('name');
-  return data || [];
-}
-
-async function getExperimentsBySubject(subjectId) {
-  if (!subjectId) return getExperiments();
-  const { data } = await db.from('experiments').select('*').eq('subject_id', subjectId).order('name');
-  return data || [];
+async function importExperimentKit(subject, experiments) {
+  const { data, error } = await db.rpc('import_experiment_kit', { p_subject: subject, p_experiments: experiments });
+  if (error) throw error;
+  return data;
 }
 
 async function getInstructors() {

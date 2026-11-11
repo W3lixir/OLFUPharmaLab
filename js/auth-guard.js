@@ -11,31 +11,31 @@
 })();
 
 async function requireAuth() {
-  if (!hasSupabaseAuth()) {
-    var localName = getCurrentUser() || 'Demo Admin';
-    setCurrentUser(localName);
-    initAuthUI(localName, 'Demo Mode');
-    return;
-  }
+  var redirect = (window.location.pathname.split('/').pop() || 'index.html');
+  var toLogin = function () { window.location.replace('login.html?redirect=' + encodeURIComponent(redirect)); };
+  if (!hasSupabaseAuth()) { toLogin(); return; }
 
   try {
     var result = await db.auth.getUser();
     var user = result.data && result.data.user;
-    if (!user) {
-      var redirect = (window.location.pathname.split('/').pop() || 'index.html');
-      window.location.replace('login.html?redirect=' + encodeURIComponent(redirect));
+    if (!user) { toLogin(); return; }
+
+    // Signed in is not enough: only accounts with the staff role may use staff pages.
+    var roleRes = await db.from('app_users').select('role').eq('id', user.id).maybeSingle();
+    var role = roleRes.data && roleRes.data.role;
+    if (role !== 'staff') {
+      window.location.replace(role ? 'student-dashboard.html' : 'login.html?denied=1');
       return;
     }
-    var displayName = user.user_metadata && user.user_metadata.full_name
-      ? user.user_metadata.full_name
+
+    var displayName = user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)
+      ? (user.user_metadata.full_name || user.user_metadata.name)
       : user.email;
     setCurrentUser(displayName);
     initAuthUI(displayName, 'Lab Staff');
   } catch (err) {
     console.error('Auth check failed:', err);
-    var fallbackName = getCurrentUser() || 'Demo Admin';
-    setCurrentUser(fallbackName);
-    initAuthUI(fallbackName, 'Demo Mode');
+    toLogin();
   }
 }
 
@@ -61,7 +61,7 @@ function initAuthUI(name, role) {
       var logout = document.createElement('a');
       logout.href = '#';
       logout.className = 'logout-link';
-      logout.style.cssText = 'display:block;font-size:11px;color:#0d9488;margin-top:4px;';
+      logout.style.cssText = 'display:block;font-size:11px;color:#6E52C4;margin-top:4px;';
       logout.textContent = 'Logout';
       logout.onclick = function(e){ e.preventDefault(); doLogout(); };
       wrap.appendChild(logout);

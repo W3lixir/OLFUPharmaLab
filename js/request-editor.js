@@ -24,6 +24,8 @@ function editPendingRequest() {
     tbody.replaceChildren();
     function addRow(item = {}) {
         const row = tbody.insertRow();
+        row.dataset.meta = JSON.stringify({ itemId: item.itemId, source: item.source, substituteFor: item.substituteFor,
+            basis: item.basis, perUnitQty: item.perUnitQty, originalName: item.name });
         ['category', 'name', 'quantity', 'unit'].forEach(key => {
             const input = document.createElement('input');
             input.className = 'form-input';
@@ -55,10 +57,16 @@ function editPendingRequest() {
     const save = button('Save Changes', async () => {
         try {
             const items = Array.from(tbody.rows).map(row => {
+                const meta = JSON.parse(row.dataset.meta || '{}');
                 const item = {};
                 row.querySelectorAll('input').forEach(input => item[input.dataset.field] = input.value.trim());
-                item.quantity = Number(item.quantity);
-                if (!item.name || !item.category || !item.unit || !Number.isFinite(item.quantity) || item.quantity <= 0)
+                // Same item: keep its inventory link and kit labels. Renamed: it is a different item now.
+                if (meta.originalName && meta.originalName === item.name) {
+                    ['itemId', 'source', 'substituteFor', 'basis', 'perUnitQty'].forEach(k => { if (meta[k] != null) item[k] = meta[k]; });
+                } else if (meta.source) item.source = 'additional';
+                const asNeeded = item.quantity === '' && meta.source === 'kit';
+                item.quantity = asNeeded ? '' : Number(item.quantity);
+                if (!item.name || !item.category || (!asNeeded && (!item.unit || !Number.isFinite(item.quantity) || item.quantity <= 0)))
                     throw new Error('Each item needs a category, name, positive quantity, and unit.');
                 return item;
             });

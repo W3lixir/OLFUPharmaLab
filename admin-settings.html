@@ -9,7 +9,7 @@
         .settings-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; border-bottom: 2px solid #e2e8f0; padding-bottom: 0; }
         .settings-tab { padding: 12px 20px; border: none; background: none; cursor: pointer; font-size: 15px; font-weight: 600; color: #718096; border-bottom: 2px solid transparent; margin-bottom: -2px; }
         .settings-tab:hover { color: #2d3748; }
-        .settings-tab.active { color: #0d9488; border-bottom-color: #0d9488; }
+        .settings-tab.active { color: #6E52C4; border-bottom-color: #6E52C4; }
         .settings-panel { display: none; }
         .settings-panel.active { display: block; }
         .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
@@ -17,26 +17,91 @@
         .settings-form h3 { margin-bottom: 16px; font-size: 16px; color: #2d3748; }
         .settings-form .form-row { display: flex; gap: 12px; margin-bottom: 12px; }
         .settings-form input, .settings-form select { flex: 1; padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
-        .settings-form input:focus { outline: none; border-color: #0d9488; }
+        .settings-form input:focus { outline: none; border-color: #6E52C4; }
         .settings-list { background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 16px; max-height: 320px; overflow-y: auto; }
         .settings-list h3 { margin-bottom: 12px; font-size: 16px; color: #2d3748; }
         .settings-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; background: #f7fafc; }
         .settings-item:hover { background: #edf2f7; }
         .settings-item .name { font-weight: 500; color: #2d3748; }
         .settings-item .meta { font-size: 12px; color: #718096; margin-top: 2px; }
+        .settings-item.is-hidden .name { color: #9890B0; }
+        .settings-item .item-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        /* Experiment kits */
+        .kit-muted { color: var(--lab-text-muted); font-size: 13px; line-height: 1.5; }
+        .kit-card h3 { margin-bottom: 6px; }
+        .kit-file-label { display: inline-block; margin: 12px 0 4px; }
+        .kit-summary { font-weight: 600; margin: 12px 0; color: var(--lab-text); }
+        .kit-table-wrap { overflow-x: auto; border: 1px solid var(--lab-border); border-radius: 14px; background: var(--lab-surface); }
+        .kit-table input, .kit-table select, .kit-items input, .kit-items select { width: 100%; min-width: 90px; padding: 7px 9px; font-size: 13px; }
+        .kit-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        .kit-table { min-width: 900px; }
+        .kit-items { min-width: 1080px; }
+        .kit-items .ki-kind { min-width: 150px; } .kit-items .ki-name { min-width: 240px; } .kit-items .ki-qty { width: 90px; min-width: 90px; }
+        .kit-items .ki-unit { width: 80px; min-width: 80px; } .kit-items .ki-basis { min-width: 120px; } .kit-items .ki-cat { min-width: 140px; } .kit-items .ki-note { min-width: 140px; }
+        .kit-exp-fields input[type=text] { padding: 9px 12px; }
+        .kit-warnings { margin: 12px 0; font-size: 13px; }
+        .kit-warnings summary { cursor: pointer; font-weight: 600; color: var(--lab-warning); }
+        .kit-warnings ul { margin: 8px 0 0 18px; max-height: 220px; overflow: auto; line-height: 1.6; }
+        .kit-import-options { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 16px; }
+        .kit-import-options label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+        .kit-check { font-weight: 500 !important; }
+        .kit-browser { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: 20px; margin-top: 16px; align-items: start; }
+        .kit-exp-list { display: flex; flex-direction: column; gap: 8px; max-height: 640px; overflow: auto; padding: 4px; }
+        .kit-exp { text-align: left; border: 1px solid var(--lab-border); background: var(--lab-surface); border-radius: 14px; padding: 10px 12px; cursor: pointer; font: inherit; color: var(--lab-text); }
+        .kit-exp:hover { background: #F6F2FE; }
+        .kit-exp.active { border-color: #A896E2; background: #F3EFFC; }
+        .kit-exp.is-hidden .kit-exp-title { color: #9890B0; }
+        .kit-exp-title { display: block; font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+        .kit-new-exp { margin-top: 6px; }
+        .kit-exp-fields { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; align-items: flex-end; }
+        .kit-exp-fields label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--lab-text-muted); }
+        .kit-exp-fields label.grow { flex: 1; min-width: 220px; }
+        .kit-exp-fields label.kit-check { flex-direction: row; align-items: center; }
+        .kit-exp-fields input[type=number] { width: 110px; }
+        .kit-items td { vertical-align: top; padding: 8px 6px !important; }
+        .ki-link { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 600; color: var(--lab-warning); }
+        .ki-link.ok { color: var(--lab-success); }
+        .kit-editor-actions { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+        .kit-editor-actions .btn-primary { margin-left: auto; }
+        .kit-link-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0; }
+        .kit-link-toolbar input { max-width: 280px; }
+        .kit-link-table { min-width: 860px; }
+        .kit-link-table td { vertical-align: middle; }
+        .kit-link-table .kl-pick { min-width: 260px; width: 100%; padding: 7px 9px; font-size: 13px; }
+        .kit-link-table .kl-hint { display: block; font-size: 11px; margin-top: 3px; color: var(--lab-warning); }
+        .kit-link-table .kl-done { color: var(--lab-success); font-weight: 600; font-size: 12px; }
+        @media (max-width: 900px) { .kit-browser { grid-template-columns: 1fr; } }
         .settings-item button { padding: 6px 12px; font-size: 12px; background: #fed7d7; color: #c53030; border: none; border-radius: 6px; cursor: pointer; }
         .settings-item button:hover { background: #feb2b2; }
+        .settings-item button.btn-edit, .settings-item button.btn-toggle { background: #EFEAFA; color: #5B41AE; }
+        .settings-item button.btn-edit:hover, .settings-item button.btn-toggle:hover { background: #E2D9F7; }
+        .settings-item .item-actions { flex-wrap: wrap; justify-content: flex-end; }
+        .modal-form .field-hint { display: block; margin-top: 6px; font-size: 12px; color: #675F82; line-height: 1.45; }
+        .modal-form .form-row-2 { display: grid; grid-template-columns: 140px 1fr; gap: 12px; }
+        @media (max-width: 560px) { .modal-form .form-row-2 { grid-template-columns: 1fr; } }
         .instructor-subjects { font-size: 12px; color: #718096; margin-top: 4px; }
-        .multi-select { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-        .multi-select label { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+        /* Checkbox lists (instructor ↔ subject links): checkbox on the left, two tidy columns */
+        .modal-form .multi-select { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 8px; max-height: 340px; overflow-y: auto; padding: 2px 4px 2px 0; }
+        .modal-form .multi-select label { display: flex; align-items: flex-start; gap: 10px; margin: 0; padding: 9px 12px; border: 1px solid #E6DFF4; border-radius: 12px; background: #FCFBFF; font-size: 13px; font-weight: 500; line-height: 1.35; color: #2E2645; cursor: pointer; }
+        .modal-form .multi-select label:hover { background: #F3EFFC; }
+        .modal-form .multi-select label:has(input:checked) { border-color: #A896E2; background: #F1EBFD; }
+        .modal-form .multi-select input[type=checkbox] { flex: none; width: 18px; height: 18px; margin: 0; padding: 0; accent-color: #6E52C4; cursor: pointer; }
+        .modal-form .multi-select .ms-text { min-width: 0; overflow-wrap: anywhere; }
+        .modal-form .multi-select .ms-code { font-weight: 700; color: #5B41AE; }
+        .modal-form .multi-select .ms-divider { grid-column: 1 / -1; margin: 8px 0 2px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #9890B0; }
+        .modal-form .multi-select label.is-hidden { opacity: .7; }
+        .modal-form .multi-select .ms-empty { grid-column: 1 / -1; font-size: 13px; color: #675F82; }
+        .settings-item .meta .no-link { color: #A8620C; font-weight: 600; }
+        @media (max-width: 560px) { .modal-form .multi-select { grid-template-columns: 1fr; } }
         .add-btn-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         .add-btn-row h3 { margin: 0; }
         .modal-form .form-group { margin-bottom: 16px; }
         .modal-form label { display: block; font-size: 14px; font-weight: 600; color: #2d3748; margin-bottom: 6px; }
         .modal-form input, .modal-form select { width: 100%; padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
-        .modal-form input:focus, .modal-form select:focus { outline: none; border-color: #0d9488; }
+        .modal-form input:focus, .modal-form select:focus { outline: none; border-color: #6E52C4; }
         @media (max-width: 768px) { .settings-grid { grid-template-columns: 1fr; } }
     </style>
+    <link rel="stylesheet" href="css/clay-theme.css">
 </head>
 <body>
     <nav class="top-nav">
@@ -107,6 +172,7 @@
             <button class="settings-tab" data-panel="courses">Courses</button>
             <button class="settings-tab" data-panel="subjects">Subjects</button>
             <button class="settings-tab" data-panel="experiments">Experiments & Activities</button>
+            <button class="settings-tab" data-panel="kits">Experiment Kits</button>
             <button class="settings-tab" data-panel="instructors">Instructors</button>
             <button class="settings-tab" data-panel="yearlevels">Year Levels</button>
             <button class="settings-tab" data-panel="groups">Groups</button>
@@ -160,6 +226,41 @@
                 </div>
                 <div id="experiments-list"></div>
             </div>
+        </div>
+
+        <!-- Experiment Kits -->
+        <div class="settings-panel" id="panel-kits">
+            <section class="settings-list kit-card" style="max-height:none;" aria-labelledby="kit-import-title">
+                <h3 id="kit-import-title">Import materials from Excel</h3>
+                <p class="kit-muted">Upload the professors' "Summary of materials" workbook (one sheet per subject). You will see a preview before anything is saved. Importing again later replaces that subject's materials.</p>
+                <label class="kit-file-label">
+                    <input type="file" id="kit-file" accept=".xlsx,.xls">
+                </label>
+                <p class="kit-muted" id="kit-import-status" role="status" aria-live="polite"></p>
+                <div id="kit-preview"></div>
+            </section>
+
+            <section class="settings-list kit-card" style="max-height:none;margin-top:24px;" aria-labelledby="kit-link-title">
+                <h3 id="kit-link-title">Link materials to inventory</h3>
+                <p class="kit-muted">Materials that are not linked are still requested, but not deducted automatically on release. Pick the inventory item once and every experiment that uses that name is linked. Generic names like "Beaker" need you to choose the size the lab normally gives.</p>
+                <div class="kit-link-toolbar">
+                    <label for="kit-link-filter" class="filter-label">Find</label>
+                    <input type="search" id="kit-link-filter" class="filter-select" placeholder="e.g. beaker, pipette">
+                    <span class="kit-muted" id="kit-link-summary" role="status" aria-live="polite"></span>
+                </div>
+                <div id="kit-unlinked" class="kit-table-wrap"></div>
+            </section>
+
+            <section class="settings-list kit-card" style="max-height:none;margin-top:24px;" aria-labelledby="kit-edit-title">
+                <h3 id="kit-edit-title">Materials per experiment</h3>
+                <label class="filter-label" for="kit-subject" style="display:block;margin-bottom:6px;">Subject</label>
+                <select id="kit-subject" class="filter-select" style="width:100%;max-width:520px;"></select>
+                <div class="kit-browser">
+                    <div id="kit-experiments" class="kit-exp-list"></div>
+                    <div id="kit-editor" class="kit-editor"></div>
+                </div>
+                <datalist id="kit-inventory-list"></datalist>
+            </section>
         </div>
 
         <!-- Instructors -->
@@ -248,15 +349,27 @@
             </div>
             <div class="modal-body">
                 <div class="modal-form">
-                    <div class="form-group">
-                        <label>Subject Name</label>
-                        <input type="text" id="modal-subject-name" placeholder="e.g., Pharmaceutical Chemistry 1">
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label for="modal-subject-code">Subject Code</label>
+                            <input type="text" id="modal-subject-code" placeholder="e.g., PCOG221" autocapitalize="characters">
+                        </div>
+                        <div class="form-group">
+                            <label for="modal-subject-name">Subject Name</label>
+                            <input type="text" id="modal-subject-name" placeholder="e.g., Pharmacognosy">
+                        </div>
                     </div>
+                    <small class="field-hint" style="margin:-8px 0 16px;">The Excel import matches subjects by code, so keep the code the same as in the professors' workbook.</small>
                     <div class="form-group">
                         <label>Course (optional)</label>
                         <select id="modal-subject-course">
                             <option value="">Select Course</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Instructors who handle this subject</label>
+                        <small class="field-hint" style="margin:-2px 0 4px;">Students will only see these instructors for this subject. If none are ticked, every instructor is shown.</small>
+                        <div class="multi-select" id="modal-subject-instructors"></div>
                     </div>
                 </div>
             </div>
@@ -275,10 +388,17 @@
             </div>
             <div class="modal-body">
                 <div class="modal-form">
-                    <div class="form-group">
-                        <label>Experiment / Activity Name</label>
-                        <input type="text" id="modal-experiment-name" placeholder="e.g., Acid-Base Titration">
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label for="modal-experiment-no">Exp No.</label>
+                            <input type="text" id="modal-experiment-no" placeholder="e.g., 3">
+                        </div>
+                        <div class="form-group">
+                            <label for="modal-experiment-name">Experiment / Activity Name</label>
+                            <input type="text" id="modal-experiment-name" placeholder="e.g., Acid-Base Titration">
+                        </div>
                     </div>
+                    <small class="field-hint" id="modal-experiment-hint" style="margin:-8px 0 16px;" hidden>The Excel import matches experiments by title. If you rename one here, rename it in the workbook too, or the next import will add the old title back.</small>
                     <div class="form-group">
                         <label>Subject</label>
                         <select id="modal-experiment-subject">
@@ -372,6 +492,9 @@
     <script src="js/supabase-data.js"></script>
     <script src="js/auth-guard.js"></script>
     <script src="js/nav-highlighting.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="js/experiment-kit-import.js"></script>
+    <script src="js/experiment-kits-admin.js"></script>
     <script>
         const tabs = document.querySelectorAll('.settings-tab');
         const panels = document.querySelectorAll('.settings-panel');
@@ -384,14 +507,47 @@
             document.getElementById('panel-' + panelId).classList.add('active');
         }));
 
-        function openModal(id) {
+        // One modal per item type, used for both Add and Edit.
+        const MODAL_NOUN = { 'modal-section': 'Section', 'modal-course': 'Course', 'modal-subject': 'Subject', 'modal-experiment': 'Experiment / Activity',
+            'modal-instructor': 'Instructor', 'modal-yearlevel': 'Year Level', 'modal-group': 'Group' };
+        const editing = {};   // modal id -> id of the row being edited
+        const cache = {};     // last loaded list per table, for Edit
+
+        async function openModal(id, editId) {
             const m = document.getElementById(id);
-            if (id === 'modal-subject') populateModalSubjectCourse();
-            if (id === 'modal-experiment') populateModalExperimentSubject();
-            if (id === 'modal-instructor') populateModalInstructorSubjects();
-            if (id === 'modal-group') populateModalGroupSection();
+            editing[id] = editId || null;
+            m.querySelector('.modal-title').textContent = (editId ? 'Edit ' : 'Add ') + MODAL_NOUN[id];
+            m.querySelector('.modal-actions .btn-primary').textContent = editId ? 'Save changes' : 'Add';
+            if (!editId) m.querySelectorAll('.modal-form input[type=text]').forEach(i => { i.value = ''; });
+            const hint = document.getElementById('modal-experiment-hint');
+            if (hint && id === 'modal-experiment') hint.hidden = !editId;
+            if (id === 'modal-subject') await Promise.all([populateModalSubjectCourse(), populateModalSubjectInstructors()]);
+            if (id === 'modal-experiment') await populateModalExperimentSubject();
+            if (id === 'modal-instructor') await populateModalInstructorSubjects();
+            if (id === 'modal-group') await populateModalGroupSection();
+            if (!editId) m.querySelectorAll('.modal-form select').forEach(sel => { sel.value = ''; });
             m.classList.add('active');
+            setTimeout(() => m.querySelector('.modal-form input[type=text]')?.focus(), 30);
         }
+        function friendlyError(error) {
+            if (error && error.code === '23505') return 'That name or code is already used by another entry.';
+            return 'Error: ' + (error && error.message || error);
+        }
+        // Insert or update, then close the modal. Returns true on success.
+        async function saveRow(modalId, table, newId, fields, label) {
+            const id = editing[modalId];
+            const { error } = id
+                ? await db.from(table).update(fields).eq('id', id)
+                : await db.from(table).insert({ id: newId, ...fields });
+            if (error) { alert(friendlyError(error)); return false; }
+            if (id && typeof addAuditEntry === 'function') {
+                try { await addAuditEntry('Settings Updated', `${MODAL_NOUN[modalId]} edited: ${label}`); } catch (_) {}
+            }
+            editing[modalId] = null;
+            closeModal(modalId);
+            return true;
+        }
+        function editBtn(fn, id) { return `<button class="btn-edit" onclick="${fn}('${id}')">Edit</button>`; }
         function closeModal(id) {
             document.getElementById(id).classList.remove('active');
         }
@@ -404,28 +560,52 @@
         async function populateModalSubjectCourse() {
             const sel = document.getElementById('modal-subject-course');
             const courses = await getCourses();
-            sel.innerHTML = '<option value="">Select Course</option>' + courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            sel.innerHTML = '<option value="">Select Course</option>' + courses.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('');
         }
         async function populateModalExperimentSubject() {
             const sel = document.getElementById('modal-experiment-subject');
-            const subjects = await getSubjects();
-            sel.innerHTML = '<option value="">Select Subject</option>' + subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            const subjects = await getSubjects(true);
+            sel.innerHTML = '<option value="">Select Subject</option>' + subjects.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(subjectLabel(s))}${s.active === false ? ' (hidden)' : ''}</option>`).join('');
+        }
+        // Subject checkboxes for an instructor: active subjects first, hidden ones in their own group.
+        function subjectCheckbox(s) {
+            const label = s.code && s.name && s.name.toUpperCase() !== s.code.toUpperCase()
+                ? `<span class="ms-code">${escapeHtml(s.code)}</span> · ${escapeHtml(s.name)}`
+                : `<span class="ms-code">${escapeHtml(s.code || '')}</span>${s.code ? '' : escapeHtml(s.name)}`;
+            return `<label class="${s.active === false ? 'is-hidden' : ''}"><input type="checkbox" value="${escapeHtml(s.id)}"><span class="ms-text">${label}</span></label>`;
         }
         async function populateModalInstructorSubjects() {
-            const subjects = await getSubjects();
-            document.getElementById('modal-instructor-subjects').innerHTML = subjects.map(s =>
-                `<label><input type="checkbox" value="${s.id}"> ${s.name}</label>`
-            ).join('');
+            const subjects = await getSubjects(true);
+            const active = subjects.filter(s => s.active !== false);
+            const hidden = subjects.filter(s => s.active === false);
+            document.getElementById('modal-instructor-subjects').innerHTML =
+                (active.length ? active.map(subjectCheckbox).join('') : '<p class="ms-empty">No subjects yet.</p>') +
+                (hidden.length ? '<div class="ms-divider">Hidden subjects (not on the request form)</div>' + hidden.map(subjectCheckbox).join('') : '');
+        }
+        async function populateModalSubjectInstructors() {
+            const list = cache.instructors = await getInstructors();
+            document.getElementById('modal-subject-instructors').innerHTML = list.length
+                ? list.map(i => `<label><input type="checkbox" value="${escapeHtml(i.id)}"><span class="ms-text">${escapeHtml(i.name)}</span></label>`).join('')
+                : '<p class="ms-empty">No instructors yet. Add them in the Instructors tab.</p>';
+        }
+        // Make exactly the ticked instructors handle this subject (instructors keep their other subjects).
+        async function saveSubjectInstructors(subjectId, chosenIds) {
+            const chosen = new Set(chosenIds);
+            for (const inst of cache.instructors || []) {
+                const ids = inst.subject_ids || [];
+                const has = ids.includes(subjectId);
+                if (has === chosen.has(inst.id)) continue;
+                const next = has ? ids.filter(x => x !== subjectId) : ids.concat(subjectId);
+                const { error } = await db.from('instructors').update({ subject_ids: next }).eq('id', inst.id);
+                if (error) { alert('Saved the subject, but could not update ' + inst.name + ': ' + error.message); return; }
+            }
         }
 
         /* ── Sections ── */
         async function submitSection() {
             const name = (document.getElementById('modal-section-name').value || '').trim();
             if (!name) { alert('Enter section name.'); return; }
-            const { error } = await db.from('sections').insert({ id: 'sec-' + Date.now(), name });
-            if (error) { alert('Error: ' + error.message); return; }
-            document.getElementById('modal-section-name').value = '';
-            closeModal('modal-section');
+            if (!await saveRow('modal-section', 'sections', 'sec-' + Date.now(), { name }, name)) return;
             renderSections();
         }
         async function removeSection(id) {
@@ -436,19 +616,21 @@
         async function renderSections() {
             const el = document.getElementById('sections-list');
             el.innerHTML = '<p style="color:#718096;font-size:14px;">Loading...</p>';
-            const list = await getSections();
+            const list = cache.sections = await getSections();
             el.innerHTML = list.length === 0 ? '<p style="color:#718096;font-size:14px;">No sections yet. Add above.</p>' :
-                list.map(s => `<div class="settings-item"><div><div class="name">${s.name}</div></div><button onclick="removeSection('${s.id}')">Remove</button></div>`).join('');
+                list.map(s => `<div class="settings-item"><div><div class="name">${escapeHtml(s.name)}</div></div><div class="item-actions">${editBtn('editSection', s.id)}<button onclick="removeSection('${s.id}')">Remove</button></div></div>`).join('');
+        }
+        async function editSection(id) {
+            const row = (cache.sections || []).find(r => r.id === id); if (!row) return;
+            await openModal('modal-section', id);
+            document.getElementById('modal-section-name').value = row.name || '';
         }
 
         /* ── Courses ── */
         async function submitCourse() {
             const name = (document.getElementById('modal-course-name').value || '').trim();
             if (!name) { alert('Enter course name.'); return; }
-            const { error } = await db.from('courses').insert({ id: 'course-' + Date.now(), name });
-            if (error) { alert('Error: ' + error.message); return; }
-            document.getElementById('modal-course-name').value = '';
-            closeModal('modal-course');
+            if (!await saveRow('modal-course', 'courses', 'course-' + Date.now(), { name }, name)) return;
             renderCourses();
         }
         async function removeCourse(id) {
@@ -459,22 +641,38 @@
         async function renderCourses() {
             const el = document.getElementById('courses-list');
             el.innerHTML = '<p style="color:#718096;font-size:14px;">Loading...</p>';
-            const list = await getCourses();
+            const list = cache.courses = await getCourses();
             el.innerHTML = list.length === 0 ? '<p style="color:#718096;font-size:14px;">No courses yet. Add above.</p>' :
-                list.map(c => `<div class="settings-item"><div><div class="name">${c.name}</div></div><button onclick="removeCourse('${c.id}')">Remove</button></div>`).join('');
+                list.map(c => `<div class="settings-item"><div><div class="name">${escapeHtml(c.name)}</div></div><div class="item-actions">${editBtn('editCourse', c.id)}<button onclick="removeCourse('${c.id}')">Remove</button></div></div>`).join('');
+        }
+        async function editCourse(id) {
+            const row = (cache.courses || []).find(r => r.id === id); if (!row) return;
+            await openModal('modal-course', id);
+            document.getElementById('modal-course-name').value = row.name || '';
+        }
+
+        function escapeHtml(v) {
+            return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+        async function setActive(table, id, active) {
+            const { error } = await db.from(table).update({ active }).eq('id', id);
+            if (error) { alert('Error: ' + error.message); return; }
+            table === 'subjects' ? renderSubjects() : renderExperiments();
         }
 
         /* ── Subjects ── */
         async function submitSubject() {
             const name = (document.getElementById('modal-subject-name').value || '').trim();
+            const code = (document.getElementById('modal-subject-code').value || '').trim().toUpperCase();
             if (!name) { alert('Enter subject name.'); return; }
             const courseId = document.getElementById('modal-subject-course').value || null;
-            const { error } = await db.from('subjects').insert({ id: 'subj-' + Date.now(), name, course_id: courseId });
-            if (error) { alert('Error: ' + error.message); return; }
-            document.getElementById('modal-subject-name').value = '';
-            document.getElementById('modal-subject-course').value = '';
-            closeModal('modal-subject');
+            const subjectId = editing['modal-subject'] || 'subj-' + Date.now();
+            const chosen = [...document.querySelectorAll('#modal-subject-instructors input:checked')].map(cb => cb.value);
+            if (!await saveRow('modal-subject', 'subjects', subjectId, { name, code: code || null, course_id: courseId }, (code ? code + ' · ' : '') + name)) return;
+            await saveSubjectInstructors(subjectId, chosen);
             renderSubjects();
+            renderExperiments();
+            renderInstructors();
         }
         async function removeSubject(id) {
             if (!confirm('Remove this subject?')) return;
@@ -484,25 +682,42 @@
         async function renderSubjects() {
             const el = document.getElementById('subjects-list');
             el.innerHTML = '<p style="color:#718096;font-size:14px;">Loading...</p>';
-            const [list, courses] = await Promise.all([getSubjects(), getCourses()]);
+            const [list, courses, instructors] = await Promise.all([getSubjects(true), getCourses(), getInstructors()]);
+            cache.subjects = list;
+            cache.instructors = instructors;
             el.innerHTML = list.length === 0 ? '<p style="color:#718096;font-size:14px;">No subjects yet. Add above.</p>' :
                 list.map(s => {
                     const course = courses.find(c => c.id === s.course_id);
-                    return `<div class="settings-item"><div><div class="name">${s.name}</div><div class="meta">${course ? course.name : '—'}</div></div><button onclick="removeSubject('${s.id}')">Remove</button></div>`;
+                    const hidden = s.active === false;
+                    const meta = [course ? course.name : '', s.year_level, s.semester, hidden ? 'Hidden from request form' : ''].filter(Boolean).join(' · ') || '—';
+                    const profs = instructors.filter(i => (i.subject_ids || []).includes(s.id)).map(i => i.name);
+                    const profLine = profs.length
+                        ? 'Instructors: ' + escapeHtml(profs.join(', '))
+                        : (hidden ? '' : '<span class="no-link">No instructor linked yet</span>');
+                    return `<div class="settings-item ${hidden ? 'is-hidden' : ''}"><div><div class="name">${escapeHtml(subjectLabel(s))}</div><div class="meta">${escapeHtml(meta)}</div>${profLine ? `<div class="meta">${profLine}</div>` : ''}</div><div class="item-actions">${editBtn('editSubject', s.id)}<button class="btn-toggle" onclick="setActive('subjects','${s.id}',${hidden})">${hidden ? 'Show' : 'Hide'}</button><button onclick="removeSubject('${s.id}')">Remove</button></div></div>`;
                 }).join('');
+        }
+
+        async function editSubject(id) {
+            const row = (cache.subjects || []).find(r => r.id === id); if (!row) return;
+            await openModal('modal-subject', id);
+            document.getElementById('modal-subject-code').value = row.code || '';
+            document.getElementById('modal-subject-name').value = row.name || '';
+            document.getElementById('modal-subject-course').value = row.course_id || '';
+            document.querySelectorAll('#modal-subject-instructors input').forEach(cb => {
+                const inst = (cache.instructors || []).find(i => i.id === cb.value);
+                cb.checked = !!(inst && (inst.subject_ids || []).includes(id));
+            });
         }
 
         /* ── Experiments ── */
         async function submitExperiment() {
             const name = (document.getElementById('modal-experiment-name').value || '').trim();
+            const expNo = (document.getElementById('modal-experiment-no').value || '').trim();
             if (!name) { alert('Enter experiment/activity name.'); return; }
             const subjectId = document.getElementById('modal-experiment-subject').value || null;
             if (!subjectId) { alert('Select a subject.'); return; }
-            const { error } = await db.from('experiments').insert({ id: 'exp-' + Date.now(), name, subject_id: subjectId });
-            if (error) { alert('Error: ' + error.message); return; }
-            document.getElementById('modal-experiment-name').value = '';
-            document.getElementById('modal-experiment-subject').value = '';
-            closeModal('modal-experiment');
+            if (!await saveRow('modal-experiment', 'experiments', 'exp-' + Date.now(), { name, exp_no: expNo || null, subject_id: subjectId }, (expNo ? 'Exp ' + expNo + ' · ' : '') + name)) return;
             renderExperiments();
         }
         async function removeExperiment(id) {
@@ -513,17 +728,27 @@
         async function renderExperiments() {
             const el = document.getElementById('experiments-list');
             el.innerHTML = '<p style="color:#718096;font-size:14px;">Loading...</p>';
-            const [list, subjects] = await Promise.all([getExperiments(), getSubjects()]);
+            const [list, subjects] = await Promise.all([getExperiments(true), getSubjects(true)]);
+            cache.experiments = list;
             const filter = document.getElementById('experiment-subject-filter');
             const current = filter ? filter.value : '';
-            if (filter) filter.innerHTML = '<option value="">All Subjects</option>' + subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            if (filter) filter.innerHTML = '<option value="">All Subjects</option>' + subjects.map(s => `<option value="${s.id}">${escapeHtml(subjectLabel(s))}</option>`).join('');
             if (filter) filter.value = current;
             const visible = current ? list.filter(e => e.subject_id === current) : list;
             el.innerHTML = visible.length === 0 ? '<p style="color:#718096;font-size:14px;">No experiments match this subject.</p>' :
                 visible.map(e => {
                     const subj = subjects.find(s => s.id === e.subject_id);
-                    return `<div class="settings-item"><div><div class="name">${e.name}</div><div class="meta">Subject: ${subj ? subj.name : '—'}</div></div><button onclick="removeExperiment('${e.id}')">Remove</button></div>`;
+                    const hidden = e.active === false;
+                    return `<div class="settings-item ${hidden ? 'is-hidden' : ''}"><div><div class="name">${escapeHtml(experimentLabel(e))}</div><div class="meta">Subject: ${escapeHtml(subj ? subjectLabel(subj) : '—')}${hidden ? ' · Hidden from request form' : ''}</div></div><div class="item-actions">${editBtn('editExperiment', e.id)}<button class="btn-toggle" onclick="setActive('experiments','${e.id}',${hidden})">${hidden ? 'Show' : 'Hide'}</button><button onclick="removeExperiment('${e.id}')">Remove</button></div></div>`;
                 }).join('');
+        }
+
+        async function editExperiment(id) {
+            const row = (cache.experiments || []).find(r => r.id === id); if (!row) return;
+            await openModal('modal-experiment', id);
+            document.getElementById('modal-experiment-no').value = row.exp_no || '';
+            document.getElementById('modal-experiment-name').value = row.name || '';
+            document.getElementById('modal-experiment-subject').value = row.subject_id || '';
         }
 
         /* ── Instructors ── */
@@ -531,12 +756,12 @@
             const name = (document.getElementById('modal-instructor-name').value || '').trim();
             if (!name) { alert('Enter instructor name.'); return; }
             const checkboxes = document.querySelectorAll('#modal-instructor-subjects input:checked');
-            const subject_ids = Array.from(checkboxes).map(cb => cb.value);
-            const { error } = await db.from('instructors').insert({ id: 'inst-' + Date.now(), name, subject_ids });
-            if (error) { alert('Error: ' + error.message); return; }
-            document.getElementById('modal-instructor-name').value = '';
+            const shown = new Set(Array.from(document.querySelectorAll('#modal-instructor-subjects input')).map(cb => cb.value));
+            // Keep links to subjects that are not listed (e.g. removed) instead of dropping them silently.
+            const prev = editing['modal-instructor'] ? ((cache.instructors || []).find(r => r.id === editing['modal-instructor'])?.subject_ids || []) : [];
+            const subject_ids = Array.from(checkboxes).map(cb => cb.value).concat(prev.filter(id => !shown.has(id)));
+            if (!await saveRow('modal-instructor', 'instructors', 'inst-' + Date.now(), { name, subject_ids }, name)) return;
             document.querySelectorAll('#modal-instructor-subjects input').forEach(i => i.checked = false);
-            closeModal('modal-instructor');
             renderInstructors();
         }
         async function removeInstructor(id) {
@@ -547,22 +772,27 @@
         async function renderInstructors() {
             const el = document.getElementById('instructors-list');
             el.innerHTML = '<p style="color:#718096;font-size:14px;">Loading...</p>';
-            const [list, subjects] = await Promise.all([getInstructors(), getSubjects()]);
+            const [list, subjects] = await Promise.all([getInstructors(), getSubjects(true)]);
+            cache.instructors = list;
             el.innerHTML = list.length === 0 ? '<p style="color:#718096;font-size:14px;">No instructors yet. Add above.</p>' :
                 list.map(i => {
-                    const names = (i.subject_ids || []).map(sid => subjects.find(s => s.id === sid)?.name || sid).join(', ') || '—';
-                    return `<div class="settings-item"><div><div class="name">${i.name}</div><div class="instructor-subjects">${names}</div></div><button onclick="removeInstructor('${i.id}')">Remove</button></div>`;
+                    const names = (i.subject_ids || []).map(sid => { const s = subjects.find(x => x.id === sid); return s ? subjectLabel(s) : sid; }).join(', ') || 'No subjects linked yet';
+                    return `<div class="settings-item"><div><div class="name">${escapeHtml(i.name)}</div><div class="instructor-subjects">${escapeHtml(names)}</div></div><div class="item-actions">${editBtn('editInstructor', i.id)}<button onclick="removeInstructor('${i.id}')">Remove</button></div></div>`;
                 }).join('');
+        }
+        async function editInstructor(id) {
+            const row = (cache.instructors || []).find(r => r.id === id); if (!row) return;
+            await openModal('modal-instructor', id);
+            document.getElementById('modal-instructor-name').value = row.name || '';
+            const linked = new Set(row.subject_ids || []);
+            document.querySelectorAll('#modal-instructor-subjects input').forEach(cb => { cb.checked = linked.has(cb.value); });
         }
 
         /* ── Year Levels ── */
         async function submitYearLevel() {
             const name = (document.getElementById('modal-yearlevel-name').value || '').trim();
             if (!name) { alert('Enter year level name.'); return; }
-            const { error } = await db.from('year_levels').insert({ id: 'yl-' + Date.now(), name });
-            if (error) { alert('Error: ' + error.message); return; }
-            document.getElementById('modal-yearlevel-name').value = '';
-            closeModal('modal-yearlevel');
+            if (!await saveRow('modal-yearlevel', 'year_levels', 'yl-' + Date.now(), { name }, name)) return;
             renderYearLevels();
         }
         async function removeYearLevel(id) {
@@ -573,26 +803,27 @@
         async function renderYearLevels() {
             const el = document.getElementById('yearlevels-list');
             el.innerHTML = '<p style="color:#718096;font-size:14px;">Loading...</p>';
-            const list = await getYearLevels();
+            const list = cache.yearLevels = await getYearLevels();
             el.innerHTML = list.length === 0 ? '<p style="color:#718096;font-size:14px;">No year levels yet. Add above.</p>' :
-                list.map(y => `<div class="settings-item"><div><div class="name">${y.name}</div></div><button onclick="removeYearLevel('${y.id}')">Remove</button></div>`).join('');
+                list.map(y => `<div class="settings-item"><div><div class="name">${escapeHtml(y.name)}</div></div><div class="item-actions">${editBtn('editYearLevel', y.id)}<button onclick="removeYearLevel('${y.id}')">Remove</button></div></div>`).join('');
+        }
+        async function editYearLevel(id) {
+            const row = (cache.yearLevels || []).find(r => r.id === id); if (!row) return;
+            await openModal('modal-yearlevel', id);
+            document.getElementById('modal-yearlevel-name').value = row.name || '';
         }
 
         /* ── Groups ── */
         async function populateModalGroupSection() {
             const sel = document.getElementById('modal-group-section');
             const sections = await getSections();
-            sel.innerHTML = '<option value="">Select Section</option>' + sections.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            sel.innerHTML = '<option value="">Select Section</option>' + sections.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
         }
         async function submitGroup() {
             const name = (document.getElementById('modal-group-name').value || '').trim();
             if (!name) { alert('Enter group name.'); return; }
             const sectionId = document.getElementById('modal-group-section').value || null;
-            const { error } = await db.from('groups').insert({ id: 'grp-' + Date.now(), name, section_id: sectionId });
-            if (error) { alert('Error: ' + error.message); return; }
-            document.getElementById('modal-group-name').value = '';
-            document.getElementById('modal-group-section').value = '';
-            closeModal('modal-group');
+            if (!await saveRow('modal-group', 'groups', 'grp-' + Date.now(), { name, section_id: sectionId }, name)) return;
             renderGroups();
         }
         async function removeGroup(id) {
@@ -604,11 +835,18 @@
             const el = document.getElementById('groups-list');
             el.innerHTML = '<p style="color:#718096;font-size:14px;">Loading...</p>';
             const [list, sections] = await Promise.all([getGroups(), getSections()]);
+            cache.groups = list;
             el.innerHTML = list.length === 0 ? '<p style="color:#718096;font-size:14px;">No groups yet. Add above.</p>' :
                 list.map(g => {
                     const sec = sections.find(s => s.id === g.section_id);
-                    return `<div class="settings-item"><div><div class="name">${g.name}</div><div class="meta">Section: ${sec ? sec.name : '—'}</div></div><button onclick="removeGroup('${g.id}')">Remove</button></div>`;
+                    return `<div class="settings-item"><div><div class="name">${escapeHtml(g.name)}</div><div class="meta">Section: ${escapeHtml(sec ? sec.name : '—')}</div></div><div class="item-actions">${editBtn('editGroup', g.id)}<button onclick="removeGroup('${g.id}')">Remove</button></div></div>`;
                 }).join('');
+        }
+        async function editGroup(id) {
+            const row = (cache.groups || []).find(r => r.id === id); if (!row) return;
+            await openModal('modal-group', id);
+            document.getElementById('modal-group-name').value = row.name || '';
+            document.getElementById('modal-group-section').value = row.section_id || '';
         }
 
         async function init() {

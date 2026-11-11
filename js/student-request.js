@@ -8,6 +8,11 @@ const totalSteps = 4;
 let requesterType = 'student'; // 'student' | 'professor'
 
 let _chemicals = null;
+let currentRequester = null; // set by requireRequester(): { role, email, full_name, ... }
+
+// Experiment kit loaded for the selected experiment: { experiment, items: [...] }
+let currentKit = null;
+const kitOff = new Set();   // ids of kit items the requester unchecked
 
 /* ── Requester type (Student / Professor) ─────────────────── */
 
@@ -59,7 +64,7 @@ function setRequesterType(type) {
 }
 
 async function getChemicalsForForm() {
-    if (!_chemicals) _chemicals = await getChemicals();
+    if (!_chemicals) _chemicals = await getRequestItemOptions();
     return _chemicals;
 }
 
@@ -117,7 +122,7 @@ async function populateSubjectDropdown() {
     const subjectSelect = document.getElementById('subject');
     if (subjectSelect) {
         subjectSelect.innerHTML = '<option value="">Select Subject</option>' +
-            subjects.map(s => `<option value="${s.name}" data-id="${s.id}">${s.name}</option>`).join('');
+            subjects.map(s => `<option value="${escapeHtml(s.name)}" data-id="${escapeHtml(s.id)}">${escapeHtml(subjectLabel(s))}</option>`).join('');
     }
     await populateActivityDropdown();
     await populateInstructorDropdown();
@@ -126,23 +131,24 @@ async function populateSubjectDropdown() {
 async function populateActivityDropdown() {
     const subjectSelect = document.getElementById('subject');
     const subjectName = subjectSelect ? subjectSelect.value : '';
-    const subjects = await getSubjects();
-    const subject = subjects.find(s => s.name === subjectName);
-    const experiments = subject ? await getExperimentsBySubject(subject.id) : await getExperiments();
+    const subjectId = subjectSelect?.selectedOptions?.[0]?.dataset?.id || '';
+    const experiments = subjectId ? await getExperimentsBySubject(subjectId) : await getExperiments();
 
     const activitySelect = document.getElementById('activity');
     if (activitySelect) {
         activitySelect.innerHTML = '<option value="">Select Experiment or Activity</option>' +
-            experiments.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
+            experiments.map(e => `<option value="${escapeHtml(e.name)}" data-id="${escapeHtml(e.id)}" data-groups="${Number(e.default_groups) || 8}">${escapeHtml(experimentLabel(e))}</option>`).join('');
     }
+    await loadKit();
 }
 
 async function populateInstructorDropdown() {
     const subjectSelect = document.getElementById('subject');
     const subjectName = subjectSelect ? subjectSelect.value : '';
-    const subjects = await getSubjects();
-    const subject = subjects.find(s => s.name === subjectName);
-    const instructors = subject ? await getInstructorsBySubject(subject.id) : await getInstructors();
+    const subjectId = subjectSelect?.selectedOptions?.[0]?.dataset?.id || '';
+    // A subject with no instructor linked yet (e.g. newly imported from the Excel) shows everyone.
+    let instructors = subjectId ? await getInstructorsBySubject(subjectId) : await getInstructors();
+    if (subjectId && instructors.length === 0) instructors = await getInstructors();
 
     const instructorSelect = document.getElementById('instructor');
     if (instructorSelect) {
@@ -152,6 +158,8 @@ async function populateInstructorDropdown() {
 }
 
 /* ── Category-first item row ──────────────────────────────── */
+
+const STOCK_SUFFIX = { low: ' (low stock)', out: ' (out of stock)' };
 
 async function onCategoryChange(categorySelect) {
     const row = categorySelect.closest('.item-row');
@@ -171,7 +179,7 @@ async function onCategoryChange(categorySelect) {
     const filtered = chemicals.filter(c => c.category === category);
 
     itemSel.innerHTML = '<option value="">Select Item</option>' +
-        filtered.map(c => `<option value="${c.name}" data-unit="${c.unit || 'pcs'}">${c.name}</option>`).join('');
+        filtered.map(c => `<option value="${escapeHtml(c.name)}" data-id="${escapeHtml(c.id || '')}" data-unit="${escapeHtml(c.unit || 'pcs')}">${escapeHtml(c.name)}${STOCK_SUFFIX[c.stock] || ''}</option>`).join('');
     itemSel.disabled = false;
 }
 
@@ -211,7 +219,11 @@ function buildItemRowHtml() {
             <label class="form-label">Unit</label>
             <select class="form-select item-unit">${UNIT_OPTS}</select>
         </div>
-        <button type="button" class="btn btn-remove" onclick="this.closest('.item-row').remove()" title="Remove">✕</button>
+        <div class="form-group item-reason-group" ${currentKit && currentKit.items.length ? '' : 'hidden'}>
+            <label class="form-label">Reason</label>
+            <select class="form-select item-reason">${reasonOptions()}</select>
+        </div>
+        <button type="button" class="btn btn-remove" onclick="this.closest('.item-row').remove()" title="Remove" aria-label="Remove item">✕</button>
     </div>`;
 }
 
@@ -220,9 +232,166 @@ async function addItem() {
     const div = document.createElement('div');
     div.innerHTML = buildItemRowHtml();
     const newRow = div.firstElementChild;
+    if (currentKit && currentKit.items.length) newRow.classList.add('has-reason');
     container.appendChild(newRow);
     newRow.querySelector('.item-name').addEventListener('change', function () {
         autoSetUnit(this);
+    });
+    return newRow;
+}
+
+/* ── Experiment kit ───────────────────────────────────────── */
+
+const BASIS_LABEL = { per_group: 'per group', per_student: 'per student', per_class: 'per class' };
+
+function selectedExperimentOption() {
+    return document.getElementById('activity')?.selectedOptions?.[0] || null;
+}
+function groupCount() { return Number(document.getElementById('group-count')?.value) || 0; }
+function studentCount() { return Number(document.getElementById('student-count')?.value) || 0; }
+function kitNeedsStudents() { return !!(currentKit && currentKit.items.some(i => i.basis === 'per_student')); }
+
+function fmtQty(n) {
+    if (n == null) return '';
+    return Number.isInteger(n) ? String(n) : String(Math.round(n * 1000) / 1000);
+}
+
+async function loadKit() {
+    const opt = selectedExperimentOption();
+    const expId = opt?.dataset?.id || '';
+    const counts = document.getElementById('grp-kit-counts');
+    kitOff.clear();
+    if (!expId) { currentKit = null; renderKit(); return; }
+    let items = [];
+    try { items = await getExperimentItems(expId); }
+    catch (err) { console.warn('Kit not loaded:', err); items = []; }
+    try { await getChemicalsForForm(); } catch (err) { console.warn('Stock flags not loaded:', err); }
+    // a newer selection may have happened while loading
+    if ((selectedExperimentOption()?.dataset?.id || '') !== expId) return;
+    currentKit = { experimentId: expId, defaultGroups: Number(opt.dataset.groups) || 8, items };
+
+    const sel = document.getElementById('group-count');
+    const max = Math.max(15, currentKit.defaultGroups);
+    const keep = Number(sel.value);
+    sel.innerHTML = Array.from({ length: max }, (_, i) => i + 1)
+        .map(n => `<option value="${n}">${n} group${n > 1 ? 's' : ''}${n === currentKit.defaultGroups ? ' (standard)' : ''}</option>`).join('');
+    sel.value = String(keep && sel.dataset.forExp === expId ? keep : currentKit.defaultGroups);
+    sel.dataset.forExp = expId;
+    if (counts) counts.hidden = items.length === 0;
+    document.getElementById('grp-student-count').hidden = !kitNeedsStudents();
+    renderKit();
+}
+
+function renderKit() {
+    const section = document.getElementById('kit-section');
+    const extraHead = document.getElementById('extra-head');
+    const list = document.getElementById('kit-list');
+    const hasKit = !!(currentKit && currentKit.items.length);
+    if (section) section.hidden = !hasKit;
+    if (extraHead) extraHead.hidden = !hasKit;
+    const counts = document.getElementById('grp-kit-counts');
+    if (counts) counts.hidden = !hasKit;
+
+    // Manual rows: show the Reason select only when there is a kit to substitute from.
+    document.querySelectorAll('.item-row').forEach(row => {
+        row.classList.toggle('has-reason', hasKit);
+        const grp = row.querySelector('.item-reason-group');
+        if (grp) grp.hidden = !hasKit;
+        const sel = row.querySelector('.item-reason');
+        if (sel) { const v = sel.value; sel.innerHTML = reasonOptions(); sel.value = [...sel.options].some(o => o.value === v) ? v : ''; }
+    });
+    // With a kit, the blank starter row is optional: drop it if untouched.
+    if (hasKit) {
+        document.querySelectorAll('#items-container .item-row').forEach(row => {
+            const touched = row.querySelector('.item-category')?.value || row.querySelector('.item-quantity')?.value;
+            if (!touched) row.remove();
+        });
+    }
+    const addBtn = document.getElementById('add-item-btn');
+    if (addBtn) addBtn.textContent = hasKit ? '+ Add additional / substitute item' : '+ Add Another Item';
+    if (!list) return;
+    if (!hasKit) { list.innerHTML = ''; return; }
+
+    const g = groupCount(), st = studentCount();
+    const sub = document.getElementById('kit-sub');
+    if (sub) sub.textContent = `Computed for ${g} group${g === 1 ? '' : 's'}${kitNeedsStudents() ? ` and ${st || '—'} students` : ''}. Uncheck anything you will not need.`;
+
+    const groups = [['chem', 'Chemicals & reagents'], ['glass', 'Glassware'], ['equip', 'Equipment & supplies']];
+    const outCount = currentKit.items.filter(it => !kitOff.has(it.id) && kitStock(it) === 'out').length;
+    const stockNote = outCount
+        ? `<p class="kit-stock-note">${outCount} material${outCount > 1 ? 's are' : ' is'} out of stock. Tap <strong>Request substitute</strong> to ask for a replacement.</p>`
+        : '';
+    list.innerHTML = stockNote + groups.map(([key, label]) => {
+        const rows = currentKit.items.filter(i => kitGroupOf(i) === key);
+        if (!rows.length) return '';
+        return `<div class="kit-group"><div class="kit-group-label">${label}</div>${rows.map(it => {
+            const total = ExperimentKits.kitQuantity(it, g, st);
+            const off = kitOff.has(it.id);
+            const per = it.qty != null ? `${fmtQty(Number(it.qty))}${it.unit ? ' ' + escapeHtml(it.unit) : ''} ${BASIS_LABEL[it.basis] || ''}` : '';
+            // The Excel wording ("per class", "individual", "4/grp") is already shown as the basis.
+            const BASIS_WORDING = /^(\d+(\.\d+)?\s*)?(pcs?\s*)?(\/\s*)?(per class|per group|per room|individual|ind|room|grp|group|class)\b/i;
+            const note = it.note && !BASIS_WORDING.test(it.note.trim()) ? it.note : '';
+            const meta = [per, note].filter(Boolean).map(escapeHtml).join(" · ");
+            const stock = kitStock(it);
+            const stockHtml = stock === 'out'
+                ? `<span class="stock-badge out">Out of stock</span><button type="button" class="kit-sub-btn" data-sub-for="${escapeHtml(it.id)}">Request substitute</button>`
+                : stock === 'low' ? '<span class="stock-badge low">Low stock</span>' : '';
+            return `<label class="kit-row ${off ? 'is-off' : ''}">
+                <input type="checkbox" data-kit-id="${escapeHtml(it.id)}" ${off ? '' : 'checked'} aria-label="Include ${escapeHtml(it.item_name)}">
+                <span><span class="kit-name">${escapeHtml(it.item_name)}</span>${meta ? `<span class="kit-meta">${meta}</span>` : ''}${stockHtml ? `<span class="kit-stock">${stockHtml}</span>` : ''}</span>
+                <span class="kit-qty ${total == null ? 'as-needed' : ''}">${total == null ? 'as needed' : fmtQty(total) + (it.unit ? ' ' + escapeHtml(it.unit) : '')}</span>
+            </label>`;
+        }).join('')}</div>`;
+    }).join('');
+    list.querySelectorAll('input[data-kit-id]').forEach(cb => cb.addEventListener('change', () => {
+        cb.checked ? kitOff.delete(cb.dataset.kitId) : kitOff.add(cb.dataset.kitId);
+        cb.closest('.kit-row').classList.toggle('is-off', !cb.checked);
+        refreshReasonOptions();
+    }));
+    list.querySelectorAll('.kit-sub-btn').forEach(btn => btn.addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        requestSubstitute(btn.dataset.subFor);
+    }));
+}
+
+// Inventory stock flag for a kit item (only for items linked to inventory).
+function kitStock(it) {
+    if (!it.inventory_item_id || !_chemicals) return null;
+    const match = _chemicals.find(c => String(c.id) === String(it.inventory_item_id));
+    return match ? match.stock || null : null;
+}
+
+function kitGroupOf(it) {
+    const c = String(it.category || '').toLowerCase();
+    if (c === 'glassware') return 'glass';
+    if (c === 'equipment') return 'equip';
+    if (c) return 'chem';
+    return it.kind === 'equipment' ? 'equip' : 'chem';
+}
+
+// Out-of-stock kit item: leave it out and open an additional row marked "Substitute for: <item>".
+async function requestSubstitute(kitItemId) {
+    const it = currentKit && currentKit.items.find(i => String(i.id) === String(kitItemId));
+    if (!it) return;
+    kitOff.add(it.id);
+    renderKit();
+    const row = await addItem();
+    const reason = row.querySelector('.item-reason');
+    if (reason) reason.value = it.item_name;
+    scheduleDraftSave();
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    row.querySelector('.item-category')?.focus({ preventScroll: true });
+}
+
+function reasonOptions() {
+    const base = '<option value="">Additional item</option>';
+    if (!currentKit || !currentKit.items.length) return base;
+    return base + currentKit.items.map(it => `<option value="${escapeHtml(it.item_name)}">Substitute for: ${escapeHtml(it.item_name)}</option>`).join('');
+}
+function refreshReasonOptions() {
+    document.querySelectorAll('.item-reason').forEach(sel => {
+        const v = sel.value; sel.innerHTML = reasonOptions();
+        sel.value = [...sel.options].some(o => o.value === v) ? v : '';
     });
 }
 
@@ -244,29 +413,23 @@ function updateProgress() {
     document.getElementById('prev-btn').style.display   = currentStep > 1 ? 'inline-flex' : 'none';
     document.getElementById('next-btn').style.display   = currentStep < totalSteps ? 'inline-flex' : 'none';
     document.getElementById('submit-btn').style.display = currentStep === totalSteps ? 'inline-flex' : 'none';
+    if (typeof scheduleDraftSave === 'function' && currentRequester) scheduleDraftSave();
 }
 
 /* ── Navigation ───────────────────────────────────────────── */
 
-async function nextStep() {
-    if (currentStep === 1) {
+// Returns the problem with a step as a message, or '' when the step is complete.
+function stepError(step) {
+    if (step === 1) {
         const name       = document.getElementById('student-name').value.trim();
         const studentNum = document.getElementById('student-number').value.trim();
         const contact    = document.getElementById('contact-number').value.trim();
         const course     = document.getElementById('course').value;
         const yearLevel  = document.getElementById('year-level').value;
-        if (requesterType === 'professor') {
-            if (!name) {
-                alert('Please fill in Full Name.');
-                return;
-            }
-        } else {
-            if (!name || !studentNum || !contact || !course || !yearLevel) {
-                alert('Please fill in all required fields in Student Information.');
-                return;
-            }
-        }
-    } else if (currentStep === 2) {
+        if (requesterType === 'professor') return name ? '' : 'Please fill in Full Name.';
+        return name && studentNum && contact && course && yearLevel ? '' : 'Please fill in all required fields in Student Information.';
+    }
+    if (step === 2) {
         const subject    = document.getElementById('subject').value;
         const activity   = document.getElementById('activity').value;
         const dateNeeded = document.getElementById('date-needed').value;
@@ -274,60 +437,116 @@ async function nextStep() {
         const timeEnd    = document.getElementById('time-end').value;
         const instructor = document.getElementById('instructor').value;
         const room       = document.getElementById('room-assignment').value;
-        if (!subject || !activity || !dateNeeded || !timeNeeded || !timeEnd || !instructor || !room) {
-            alert('Please fill in all required fields in Request Details.');
-            return;
+        if (!subject || !activity || !dateNeeded || !timeNeeded || !timeEnd || !instructor || !room) return 'Please fill in all required fields in Request Details.';
+        if (timeEnd <= timeNeeded) return 'Time End must be after Time Start.';
+        if (currentKit && currentKit.items.length) {
+            if (!groupCount()) return 'Please choose the number of groups.';
+            if (kitNeedsStudents() && !(studentCount() >= 1)) return 'Please enter the number of students. Some materials are given per student.';
         }
-        if (timeEnd && timeNeeded && timeEnd <= timeNeeded) {
-            alert('Time End must be after Time Start.');
-            return;
-        }
-    } else if (currentStep === 3) {
+        return '';
+    }
+    if (step === 3) {
         let hasValidItem = false;
+        let halfFilled = false;
         document.querySelectorAll('.item-row').forEach(item => {
             const category = item.querySelector('.item-category')?.value || '';
             const name     = (item.querySelector('.item-name')?.value || '').trim();
             const qty      = item.querySelector('.item-quantity')?.value;
             if (category && name && qty) hasValidItem = true;
+            else if (category || name || qty) halfFilled = true;
         });
-        if (!hasValidItem) {
-            alert('Please add at least one item with a category, name, and quantity.');
-            return;
+        const kitChosen = !!(currentKit && currentKit.items.some(i => !kitOff.has(i.id)));
+        if (halfFilled) return 'Please complete or remove the unfinished additional item (category, name, and quantity).';
+        if (!hasValidItem && !kitChosen) {
+            return currentKit && currentKit.items.length
+                ? 'Please keep at least one experiment material checked, or add an item.'
+                : 'Please add at least one item with a category, name, and quantity.';
         }
+        return '';
     }
+    return '';
+}
+
+async function nextStep() {
+    const err = stepError(currentStep);
+    if (err) {
+        alert(err);
+        if (currentStep === 1) showRequesterFields();
+        if (currentStep === 2 && /number of students/.test(err)) document.getElementById('student-count')?.focus();
+        return;
+    }
+    if (currentStep === 2) renderKit();
 
     if (currentStep < totalSteps) {
         currentStep++;
         updateProgress();
         if (currentStep === 4) updateReviewSummary();
+        scrollFormTop();
     }
 }
 
 function previousStep() {
-    if (currentStep > 1) {
-        currentStep--;
-        updateProgress();
-        if (currentStep !== 4) document.getElementById('print-btn').style.display = 'none';
-    }
+    if (currentStep > 1) goToStep(currentStep - 1, false);
+}
+
+// Jump back to an earlier step (Edit buttons on the review step).
+function goToStep(step, expandDetails = true) {
+    if (step < 1 || step >= currentStep) return;
+    currentStep = step;
+    updateProgress();
+    document.getElementById('print-btn').style.display = 'none';
+    if (step === 1 && expandDetails) showRequesterFields();
+    scrollFormTop();
+}
+
+function scrollFormTop() {
+    const bar = document.querySelector('.progress-bar');
+    if (bar && bar.getBoundingClientRect().top < 0) bar.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /* ── Submit ───────────────────────────────────────────────── */
 
 function getFormRequestItems() {
     const CAT_ORDER_SUBMIT = ['Liquid Reagent','Solid Reagent','Glassware','Equipment','Antibiotic Disc'];
-    const items = [];
+    const kitItems = [];
+    if (currentKit && currentKit.items.length) {
+        const g = groupCount(), st = studentCount();
+        currentKit.items.forEach(it => {
+            if (kitOff.has(it.id)) return;
+            const total = ExperimentKits.kitQuantity(it, g, st);
+            kitItems.push({
+                name: it.item_name,
+                quantity: total == null ? '' : String(total),
+                unit: it.unit || '',
+                category: it.category || (it.kind === 'equipment' ? 'Equipment' : 'Solid Reagent'),
+                itemId: it.inventory_item_id || null,
+                source: 'kit',
+                basis: it.basis,
+                perUnitQty: it.qty == null ? null : Number(it.qty),
+                note: total == null ? 'as needed' : (it.note || ''),
+            });
+        });
+    }
+    const extra = [];
     document.querySelectorAll('.item-row').forEach(item => {
         const category = item.querySelector('.item-category')?.value || '';
-        const name     = (item.querySelector('.item-name')?.value || '').trim();
+        const nameSel  = item.querySelector('.item-name');
+        const name     = (nameSel?.value || '').trim();
         const qty      = item.querySelector('.item-quantity')?.value;
         const unit     = item.querySelector('.item-unit')?.value;
-        if (name && qty && unit) items.push({ name, quantity: qty, unit, category });
+        const reason   = item.querySelector('.item-reason')?.value || '';
+        const itemId   = nameSel?.selectedOptions?.[0]?.dataset?.id || null;
+        if (name && qty && unit) extra.push({
+            name, quantity: qty, unit, category, itemId,
+            source: currentKit && currentKit.items.length ? 'additional' : undefined,
+            substituteFor: reason || undefined,
+        });
     });
-    items.sort((a, b) => {
+    extra.sort((a, b) => {
         const ai = CAT_ORDER_SUBMIT.indexOf(a.category); const bi = CAT_ORDER_SUBMIT.indexOf(b.category);
         return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
     });
-    return items;
+    return kitItems.concat(extra);
 }
 
 function collectCurrentRequestData(referenceNumber, dateSubmitted) {
@@ -354,6 +573,9 @@ function collectCurrentRequestData(referenceNumber, dateSubmitted) {
         dateNeeded:         document.getElementById('date-needed').value,
         timeNeeded:         document.getElementById('time-needed').value,
         timeEnd:            document.getElementById('time-end').value,
+        experimentId:       selectedExperimentOption()?.dataset?.id || '',
+        groupCount:         currentKit && currentKit.items.length ? groupCount() : null,
+        studentCount:       currentKit && currentKit.items.length && kitNeedsStudents() ? studentCount() : null,
         roomAssignment:     roomVal,
         roomAssignmentName: roomName || 'AMS 204',
         requestType:        firstCategory || 'mixed',
@@ -365,19 +587,89 @@ function collectCurrentRequestData(referenceNumber, dateSubmitted) {
     };
 }
 
+function makeReferenceNumber() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return `REQ-${now.getFullYear()}-${pad(now.getMonth()+1)}${pad(now.getDate())}-${Math.floor(Math.random()*10000).toString().padStart(4,'0')}`;
+}
+
+// Remember the requester's details so the next request is prefilled. Never blocks submission.
+function saveRequesterProfile() {
+    if (!currentRequester || currentRequester.role === 'staff') return;
+    const val = id => document.getElementById(id)?.value?.trim() || '';
+    saveMyProfile({
+        full_name:      val('student-name'),
+        student_number: val('student-number'),
+        contact_number: val('contact-number'),
+        course:         val('course'),
+        year_level:     val('year-level'),
+        section:        val('section'),
+        group_name:     val('group'),
+    }).catch(err => console.warn('Profile save failed:', err));
+}
+
+function setSelectValue(id, value) {
+    const el = document.getElementById(id);
+    if (!el || !value) return;
+    if (![...el.options].some(o => o.value === value)) {
+        const o = document.createElement('option');
+        o.value = value; o.textContent = value;
+        el.appendChild(o);
+    }
+    el.value = value;
+}
+
+// Lock requester type to the signed-in role and prefill saved details.
+async function applyRequester(me) {
+    currentRequester = me;
+    if (me.role === 'student' || me.role === 'professor') {
+        setRequesterType(me.role);
+        const toggleGroup = document.getElementById('requester-toggle')?.closest('.form-group');
+        if (toggleGroup) toggleGroup.style.display = 'none';
+        const nameEl = document.getElementById('student-name');
+        if (nameEl && me.full_name) { nameEl.value = me.full_name; nameEl.readOnly = true; }
+    }
+    if (me.role === 'staff') return;
+    const setText = (id, v) => { const el = document.getElementById(id); if (el && v && !el.value) el.value = v; };
+    setText('student-number', me.student_number);
+    setText('contact-number', me.contact_number);
+    if (me.course) {
+        setSelectValue('course', me.course);
+        await populateSubjectDropdown();
+    }
+    setSelectValue('year-level', me.year_level);
+    setSelectValue('section', me.section);
+    setSelectValue('group', me.group_name);
+}
+
 async function submitForm() {
     const submitBtn = document.getElementById('submit-btn');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
 
-    const now = new Date();
-    const pad = n => String(n).padStart(2, '0');
-    const referenceNumber = `REQ-${now.getFullYear()}-${pad(now.getMonth()+1)}${pad(now.getDate())}-${Math.floor(Math.random()*10000).toString().padStart(4,'0')}`;
+    const referenceNumber = makeReferenceNumber();
 
-    const formData = collectCurrentRequestData(referenceNumber, new Date().toISOString());
+    let formData = collectCurrentRequestData(referenceNumber, new Date().toISOString());
 
     try {
-        await saveRequest(formData);
+        // Retry with a new reference number if the random one is already taken.
+        for (let attempt = 0; ; attempt++) {
+            try {
+                await insertRequest(formData);
+                break;
+            } catch (err) {
+                if (err && err.code === '23505' && attempt < 4) {
+                    formData.requestId = makeReferenceNumber();
+                    continue;
+                }
+                throw err;
+            }
+        }
+        const savedRef = formData.requestId;
+        saveRequesterProfile();
+        draftDisabled = true;
+        clearDraft();
+        document.getElementById('draft-notice').hidden = true;
 
         document.getElementById('review-summary').style.display  = 'none';
         document.getElementById('success-message').style.display = 'block';
@@ -385,10 +677,10 @@ async function submitForm() {
         document.getElementById('submit-btn').style.display      = 'none';
 
         const refEl = document.getElementById('reference-number-display');
-        if (refEl) refEl.textContent = referenceNumber;
+        if (refEl) refEl.textContent = savedRef;
 
         const trackLink = document.getElementById('track-link');
-        if (trackLink) trackLink.href = 'student-dashboard.html?ref=' + encodeURIComponent(referenceNumber);
+        if (trackLink) trackLink.href = 'student-dashboard.html?ref=' + encodeURIComponent(savedRef);
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
@@ -400,6 +692,12 @@ async function submitForm() {
 }
 
 /* ── Print helpers ────────────────────────────────────────── */
+
+function itemSourceLabel(it) {
+    if (it.substituteFor) return 'Substitute for ' + it.substituteFor;
+    if (it.source === 'additional') return 'Additional item';
+    return '';
+}
 
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, ch => ({
@@ -425,9 +723,12 @@ function buildPrintableRequestHtml(req, options = {}) {
         return new Date(s).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     }
 
-    const itemsHTML = (req.items || []).map(item =>
-        `<tr><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item.category || '-')}</td><td style="text-align:right;">${escapeHtml(item.quantity)} ${escapeHtml(item.unit)}</td></tr>`
-    ).join('');
+    const itemsHTML = (req.items || []).map(item => {
+        const src = itemSourceLabel(item);
+        const qty = item.quantity === '' || item.quantity == null ? 'as needed' : `${escapeHtml(item.quantity)} ${escapeHtml(item.unit)}`;
+        return `<tr><td>${escapeHtml(item.name)}${src ? `<br><small style="color:#64748b;">${escapeHtml(src)}</small>` : ''}</td><td>${escapeHtml(item.category || '-')}</td><td style="text-align:right;">${qty}</td></tr>`;
+    }).join('');
+    const groupsInfo = req.groupCount ? `<p>Groups: <strong>${escapeHtml(req.groupCount)}${req.studentCount ? ' (' + escapeHtml(req.studentCount) + ' students)' : ''}</strong></p>` : '';
     const submitted = req.requestId ? `<p>Submitted: <strong>${new Date(req.dateSubmitted).toLocaleString('en-PH', { timeZone: 'Asia/Manila', dateStyle: 'medium', timeStyle: 'short' })}</strong></p>` : '';
     const previewNote = req.requestId ? '' : '<div class="notice">This is a pre-submit print preview. Submit the request to generate a reference number.</div>';
 
@@ -435,10 +736,10 @@ function buildPrintableRequestHtml(req, options = {}) {
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}body{font-family:Arial,sans-serif;padding:0;color:#1f2937;background:white;}
 .header{text-align:center;margin-bottom:8px;border-bottom:2px solid #d1d5db;padding-bottom:6px;}
-.brand{font-size:20px;font-weight:700;color:#0d9488;}.title{font-size:13px;font-weight:700;margin-top:2px;color:#111827;}
+.brand{font-size:20px;font-weight:700;color:#6E52C4;}.title{font-size:13px;font-weight:700;margin-top:2px;color:#111827;}
 .ref{background:#f8fafc;border:1px solid #e2e8f0;padding:6px;border-radius:6px;text-align:center;margin:6px 0 0;}
 .ref-label{font-size:9px;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:.05em;margin-bottom:1px;}
-.ref-value{font-size:16px;font-weight:700;color:#0f766e;font-family:'Courier New',monospace;}
+.ref-value{font-size:16px;font-weight:700;color:#5B41AE;font-family:'Courier New',monospace;}
 .notice{padding:6px 10px;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;color:#92400e;font-size:11px;margin-bottom:8px;}
 .section{border:1px solid #e5e7eb;border-radius:6px;margin-bottom:8px;overflow:hidden;break-inside:avoid;}
 .section h3{font-size:12px;font-weight:700;background:#f8fafc;padding:4px 10px;color:#111827;border-bottom:1px solid #e5e7eb;}
@@ -462,6 +763,7 @@ ${isProf && req.projectTitle ? '<p>Project / Research: <strong>' + escapeHtml(re
 <p>Date Needed: <strong>${escapeHtml(fmtDate(req.dateNeeded))}</strong></p>
 <p>Time: <strong>${escapeHtml(formatRequestTime(req.timeNeeded))} - ${escapeHtml(formatRequestTime(req.timeEnd))}</strong></p>
 <p>Room: <strong>${escapeHtml(req.roomAssignmentName || req.laboratory || '-')}</strong></p>
+${groupsInfo}
 ${submitted}</div></div>
 <div class="section"><h3>Requested Items</h3>
 <table><thead><tr><th>Item</th><th>Category</th><th style="text-align:right;">Qty</th></tr></thead>
@@ -551,30 +853,27 @@ function updateReviewSummary() {
     document.getElementById('review-room').textContent =
         roomEl && roomEl.selectedIndex > 0 ? roomEl.options[roomEl.selectedIndex].text : '-';
 
-    const CAT_ORDER = ['Liquid Reagent','Solid Reagent','Glassware','Equipment','Antibiotic Disc'];
-    const collectedItems = [];
-    document.querySelectorAll('.item-row').forEach(item => {
-        const cat = item.querySelector('.item-category')?.value || '';
-        const n   = item.querySelector('.item-name')?.value.trim() || '';
-        const q   = item.querySelector('.item-quantity')?.value || '';
-        const u   = item.querySelector('.item-unit')?.value || '';
-        if (n && q && u) collectedItems.push({ cat, n, q, u });
-    });
-    collectedItems.sort((a, b) => {
-        const ai = CAT_ORDER.indexOf(a.cat); const bi = CAT_ORDER.indexOf(b.cat);
-        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-    });
+    const collectedItems = getFormRequestItems();
     const itemsTableBody = document.getElementById('items-table-body');
     itemsTableBody.innerHTML = '';
     if (collectedItems.length === 0) {
         itemsTableBody.innerHTML = '<tr><td colspan="3" style="padding:12px;color:#718096;text-align:center;">No items added yet</td></tr>';
     } else {
-        collectedItems.forEach(({ cat, n, q, u }) => {
+        collectedItems.forEach(it => {
             const row = document.createElement('tr');
             row.style.borderBottom = '1px solid #e2e8f0';
-            row.innerHTML = `<td style="padding:12px;color:#2d3748;">${n}</td><td style="padding:12px;color:#718096;font-size:13px;">${cat}</td><td style="text-align:right;padding:12px;color:#2d3748;">${q} ${u}</td>`;
+            const src = itemSourceLabel(it);
+            row.innerHTML = `<td style="padding:12px;color:#2d3748;">${escapeHtml(it.name)}${src ? `<span class="review-source">${escapeHtml(src)}</span>` : ''}</td>` +
+                `<td style="padding:12px;color:#718096;font-size:13px;">${escapeHtml(it.category)}</td>` +
+                `<td style="text-align:right;padding:12px;color:#2d3748;">${it.quantity === '' ? 'as needed' : escapeHtml(it.quantity) + ' ' + escapeHtml(it.unit)}</td>`;
             itemsTableBody.appendChild(row);
         });
+    }
+    const groupsLine = document.getElementById('review-groups');
+    if (groupsLine) {
+        const g = currentKit && currentKit.items.length ? groupCount() : 0;
+        groupsLine.textContent = g ? `${g} group${g > 1 ? 's' : ''}${kitNeedsStudents() ? `, ${studentCount()} students` : ''}` : '-';
+        groupsLine.closest('p').style.display = g ? '' : 'none';
     }
 
     const remarks = document.getElementById('remarks').value.trim();
@@ -585,17 +884,231 @@ function updateReviewSummary() {
     document.getElementById('print-btn').style.display = 'inline-flex';
 }
 
+/* ── Step 1: saved-details card ───────────────────────────── */
+
+// Show a short "Is this still you?" card instead of the full form when the saved profile is complete.
+function maybeCompactStep1() {
+    if (!currentRequester || currentRequester.role === 'staff') return;
+    const hasSaved = currentRequester.student_number || currentRequester.course || currentRequester.contact_number;
+    if (!hasSaved || stepError(1)) return;
+    renderMeCard();
+    document.getElementById('me-card').hidden = false;
+    document.getElementById('requester-fields').hidden = true;
+}
+
+function renderMeCard() {
+    const val = id => document.getElementById(id)?.value?.trim() || '';
+    const isStudent = requesterType === 'student';
+    const courseLine = [val('course'), val('year-level')].filter(Boolean).join(' - ');
+    const sectionLine = [val('section') ? 'Section ' + val('section') : '', isStudent ? val('group') : ''].filter(Boolean).join(', ');
+    const rows = [
+        ['Name', val('student-name')],
+        isStudent ? ['Student No.', val('student-number')] : null,
+        isStudent ? ['Contact', val('contact-number')] : null,
+        [isStudent ? 'Course' : 'Department', courseLine],
+        ['Section', sectionLine],
+        !isStudent ? ['Project', val('project-title')] : null,
+    ].filter(r => r && r[1]);
+    document.getElementById('me-card-list').innerHTML = rows
+        .map(([k, v]) => `<dt>${escapeHtml(k)}</dt><dd>${escapeHtml(v)}</dd>`).join('');
+}
+
+function showRequesterFields() {
+    const card = document.getElementById('me-card');
+    const fields = document.getElementById('requester-fields');
+    if (!card || !fields || card.hidden) return;
+    card.hidden = true;
+    fields.hidden = false;
+}
+
+/* ── Draft auto-save (phone signal drops, accidental refresh) ── */
+
+const DRAFT_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000;
+const DRAFT_FIELDS = ['student-number', 'contact-number', 'course', 'year-level', 'section', 'group', 'project-title',
+    'date-needed', 'time-needed', 'time-end', 'instructor', 'room-assignment', 'remarks'];
+let draftTimer = null;
+let draftDisabled = false;   // set after a successful submit
+
+function draftKey() {
+    return 'pharmalab:request-draft:' + String(currentRequester?.email || 'guest').toLowerCase();
+}
+
+function collectDraft() {
+    const fields = {};
+    DRAFT_FIELDS.forEach(id => { fields[id] = document.getElementById(id)?.value || ''; });
+    const extras = [];
+    document.querySelectorAll('#items-container .item-row').forEach(row => {
+        const e = {
+            category: row.querySelector('.item-category')?.value || '',
+            name: row.querySelector('.item-name')?.value || '',
+            qty: row.querySelector('.item-quantity')?.value || '',
+            unit: row.querySelector('.item-unit')?.value || '',
+            reason: row.querySelector('.item-reason')?.value || '',
+        };
+        if (e.category || e.name || e.qty) extras.push(e);
+    });
+    return {
+        v: 1, savedAt: Date.now(), step: currentStep, fields,
+        subjectId: document.getElementById('subject')?.selectedOptions?.[0]?.dataset?.id || '',
+        experimentId: selectedExperimentOption()?.dataset?.id || '',
+        groupCount: document.getElementById('group-count')?.value || '',
+        studentCount: document.getElementById('student-count')?.value || '',
+        kitOff: [...kitOff], extras,
+    };
+}
+
+function saveDraftNow() {
+    if (draftDisabled || !currentRequester) return;
+    const d = collectDraft();
+    const hasContent = d.subjectId || d.fields['date-needed'] || d.fields.remarks || d.extras.length;
+    try {
+        if (hasContent) localStorage.setItem(draftKey(), JSON.stringify(d));
+        else localStorage.removeItem(draftKey());
+    } catch (_) { /* storage blocked: the form still works */ }
+}
+
+function scheduleDraftSave() {
+    if (draftDisabled) return;
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(saveDraftNow, 400);
+}
+
+function clearDraft() {
+    clearTimeout(draftTimer);
+    try { localStorage.removeItem(draftKey()); } catch (_) {}
+}
+
+function readDraft() {
+    try {
+        const d = JSON.parse(localStorage.getItem(draftKey()) || 'null');
+        if (!d || d.v !== 1 || !(Date.now() - d.savedAt < DRAFT_MAX_AGE_MS)) return null;
+        return d;
+    } catch (_) { return null; }
+}
+
+function setIfOption(sel, value) {
+    if (sel && value && [...sel.options].some(o => o.value === value)) { sel.value = value; return true; }
+    return false;
+}
+
+// Put a saved draft back into the form, following the same cascade the requester used.
+async function restoreDraft() {
+    const d = readDraft();
+    if (!d) return false;
+    const f = d.fields || {};
+    ['student-number', 'contact-number', 'project-title'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && f[id] && !el.readOnly) el.value = f[id];
+    });
+    if (f.course && f.course !== document.getElementById('course').value) {
+        setSelectValue('course', f.course);
+        await populateSubjectDropdown();
+    }
+    ['year-level', 'section', 'group'].forEach(id => { if (f[id]) setSelectValue(id, f[id]); });
+
+    const subjectSel = document.getElementById('subject');
+    const subjOpt = [...subjectSel.options].find(o => o.dataset.id && o.dataset.id === d.subjectId);
+    if (subjOpt) {
+        subjectSel.value = subjOpt.value;
+        await Promise.all([populateActivityDropdown(), populateInstructorDropdown()]);
+        const actSel = document.getElementById('activity');
+        const actOpt = [...actSel.options].find(o => o.dataset.id && o.dataset.id === d.experimentId);
+        if (actOpt) {
+            actSel.value = actOpt.value;
+            await loadKit();
+            setIfOption(document.getElementById('group-count'), d.groupCount);
+            if (d.studentCount) document.getElementById('student-count').value = d.studentCount;
+            if (currentKit) (d.kitOff || []).forEach(id => { if (currentKit.items.some(i => String(i.id) === String(id))) kitOff.add(id); });
+            renderKit();
+        }
+    }
+    setIfOption(document.getElementById('instructor'), f.instructor);
+    setIfOption(document.getElementById('room-assignment'), f['room-assignment']);
+    ['date-needed', 'time-needed', 'time-end', 'remarks'].forEach(id => { if (f[id]) document.getElementById(id).value = f[id]; });
+
+    for (const e of d.extras || []) {
+        const blank = [...document.querySelectorAll('#items-container .item-row')].find(r =>
+            !r.querySelector('.item-category')?.value && !r.querySelector('.item-quantity')?.value);
+        const row = blank || await addItem();
+        const cat = row.querySelector('.item-category');
+        if (!setIfOption(cat, e.category)) continue;
+        await onCategoryChange(cat);
+        const nameSel = row.querySelector('.item-name');
+        if (setIfOption(nameSel, e.name)) autoSetUnit(nameSel);
+        row.querySelector('.item-quantity').value = e.qty || '';
+        const unitSel = row.querySelector('.item-unit');
+        if (e.unit && unitSel && !setIfOption(unitSel, e.unit)) { unitSel.add(new Option(e.unit, e.unit)); unitSel.value = e.unit; }
+        setIfOption(row.querySelector('.item-reason'), e.reason);
+    }
+
+    // Return to the step they were on, but never past a step that is no longer complete.
+    let step = 1;
+    while (step < Math.min(Number(d.step) || 1, 3) && !stepError(step)) step++;
+    currentStep = step;
+    updateProgress();
+
+    const when = new Date(d.savedAt).toLocaleString('en-PH', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    document.getElementById('draft-notice-text').textContent = `Your unfinished request from ${when} was restored.`;
+    document.getElementById('draft-notice').hidden = false;
+    return true;
+}
+
+/* ── Success screen ───────────────────────────────────────── */
+
+async function copyReference() {
+    const ref = document.getElementById('reference-number-display').textContent.trim();
+    const btn = document.getElementById('copy-ref-btn');
+    let ok = false;
+    try { await navigator.clipboard.writeText(ref); ok = true; }
+    catch (_) {
+        const ta = document.createElement('textarea');
+        ta.value = ref; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
+        ta.remove();
+    }
+    btn.textContent = ok ? 'Copied ✓' : 'Copy failed: please write it down';
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => { btn.textContent = 'Copy number'; }, 2500);
+}
+
 /* ── Init ─────────────────────────────────────────────────── */
 
 document.addEventListener('DOMContentLoaded', async function () {
     updateProgress();
+    const me = await requireRequester();
     await populateDropdowns();
+    await applyRequester(me);
+    let restored = false;
+    try { restored = await restoreDraft(); } catch (err) { console.warn('Draft not restored:', err); }
+    if (currentStep === 1) maybeCompactStep1();
+    document.body.dataset.requesterReady = '1';
+
+    // Auto-save the draft on every change; discard it on request.
+    const form = document.querySelector('.request-form');
+    form?.addEventListener('input', scheduleDraftSave);
+    form?.addEventListener('change', scheduleDraftSave);
+    form?.addEventListener('click', e => { if (e.target.closest('.btn-remove')) scheduleDraftSave(); });
+    document.getElementById('me-card-edit')?.addEventListener('click', () => {
+        showRequesterFields();
+        document.getElementById('contact-number')?.focus();
+    });
+    document.getElementById('draft-discard')?.addEventListener('click', () => {
+        if (!confirm('Discard your unfinished request and start over?')) return;
+        draftDisabled = true;
+        clearDraft();
+        location.reload();
+    });
+    if (restored) scheduleDraftSave();
 
     document.getElementById('course')?.addEventListener('change', () => populateSubjectDropdown());
     document.getElementById('subject')?.addEventListener('change', () => {
         populateActivityDropdown();
         populateInstructorDropdown();
     });
+    document.getElementById('activity')?.addEventListener('change', () => loadKit());
+    document.getElementById('group-count')?.addEventListener('change', () => renderKit());
+    document.getElementById('student-count')?.addEventListener('input', () => renderKit());
 
     // Auto-set unit when item is selected (for initial row)
     document.getElementById('items-container')?.addEventListener('change', function (e) {

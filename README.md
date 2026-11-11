@@ -80,11 +80,11 @@ EC-Lab/
 
 3. **Open in browser**
    - The server will open automatically at **http://localhost:3000**
-   - If not, go to: **http://localhost:3000/START-HERE.html**
+   - If not, go to: **http://localhost:3000/login.html**
    - All pages are served from localhost (e.g. `http://localhost:3000/index.html`)
 
 **Available scripts:**
-- `npm run dev` — Start dev server with live reload (opens START-HERE.html)
+- `npm run dev` — Start dev server with live reload (opens login.html)
 - `npm start` — Same as dev
 - `npm run serve` — Start server without auto-opening browser
 

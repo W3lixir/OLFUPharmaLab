@@ -1,100 +1,224 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lab Tech Login - PharmaLab</title>
-    <link rel="stylesheet" href="css/lab-ui.css">
+    <title>Staff Sign-in · PharmaLab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        .login-page {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #0d9488 0%, #0f766e 50%, #115e59 100%);
-            padding: 24px;
+        :root {
+            /* Purple taken from the College of Pharmacy login artwork */
+            --brand: #6E52C4;
+            --brand-dark: #5B41AE;
+            --brand-deep: #2A0E52;
+            --brand-tint: #F3EFFC;
+            --ink: #2E2645;
+            --muted: #675F82;
+            --line: #E6DFF4;
+            --field-line: #E6DFF4;
+            --paper: #F3EFFC;
+            --clay-out: 10px 10px 24px rgba(98,74,170,.13), -8px -8px 20px rgba(255,255,255,.85);
+            --clay-in: inset 2px 2px 5px rgba(255,255,255,.9), inset -3px -3px 8px rgba(98,74,170,.07);
+            --clay-press: inset 3px 3px 7px rgba(98,74,170,.12), inset -3px -3px 7px rgba(255,255,255,.95);
+            --surface: #FCFBFF;
+            --danger: #B42318;
+            --danger-bg: #FEF3F2;
+            --ease: cubic-bezier(0.2, 0, 0, 1);
+            --font-display: 'Source Serif 4', Georgia, serif;
+            --font-body: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            --font-mono: 'IBM Plex Mono', Consolas, monospace;
         }
-        .login-card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-            padding: 48px;
-            max-width: 420px;
-            width: 100%;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: var(--font-body); color: var(--ink); background: linear-gradient(160deg, #F6F2FD 0%, #EFEAFA 55%, #ECE6F9 100%) fixed; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+        .shell { min-height: 100vh; display: grid; grid-template-columns: 1fr auto; }
+
+        /* Form side (left) */
+        .panel { display: flex; flex-direction: column; padding: 24px 48px; }
+        .brand-top { display: flex; align-items: center; gap: 12px; }
+        .brand-top img { width: 44px; height: 44px; border-radius: 999px; }
+        .brand-top .uni { font-size: 13px; line-height: 1.35; color: var(--muted); }
+        .brand-top .uni strong { display: block; color: var(--ink); font-weight: 600; font-size: 14px; }
+        .panel-center { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 0; }
+        main.signin { width: 100%; max-width: 440px; background: var(--surface); border: 1px solid rgba(255,255,255,.7); border-radius: 26px; padding: 32px; box-shadow: var(--clay-out), var(--clay-in); }
+        .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--brand); margin-bottom: 8px; }
+        .signin h1 { font-family: var(--font-display); font-weight: 600; font-size: 32px; line-height: 1.1; margin-bottom: 8px; }
+        .signin .sub { color: var(--muted); font-size: 15px; line-height: 1.5; margin-bottom: 24px; }
+        .login-error { display: none; background: #FCE8EC; border: 1px solid #F6C9D2; color: #B42338; border-radius: 14px; padding: 12px; font-size: 14px; line-height: 1.45; margin-bottom: 16px; }
+        .btn { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 12px 16px; border-radius: 14px; font: 600 15px var(--font-body); cursor: pointer; transition: background-color .15s var(--ease), border-color .15s var(--ease); }
+        .btn-google { background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: 5px 5px 12px rgba(98,74,170,.12), -4px -4px 10px rgba(255,255,255,.85), var(--clay-in); }
+        .btn-google:hover { background: var(--brand-tint); }
+        .btn-primary { background: linear-gradient(145deg, #7D62D2, #6247BC); color: #fff; border: 1px solid rgba(255,255,255,.25); box-shadow: 6px 6px 14px rgba(98,74,170,.3), inset 2px 2px 4px rgba(255,255,255,.3), inset -2px -2px 5px rgba(48,28,120,.25); }
+        .btn-primary:hover { background: linear-gradient(145deg, #7258CA, #563DAE); }
+        .btn:active { transform: translateY(1px); }
+        .btn:disabled { opacity: .65; cursor: wait; }
+        .btn:focus-visible, input:focus-visible, .pw-toggle:focus-visible, a:focus-visible { outline: 3px solid rgba(110,82,196,.45); outline-offset: 2px; }
+        .hint { font-family: var(--font-mono); font-size: 12px; color: var(--muted); text-align: center; margin-top: 8px; }
+        .divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; margin: 24px 0; }
+        .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+        .field { margin-bottom: 16px; }
+        .field label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+        .field input { width: 100%; min-height: 48px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: #F8F5FE; box-shadow: var(--clay-press); font: 16px var(--font-body); color: var(--ink); transition: border-color .15s var(--ease); }
+        .field input:hover { border-color: #D6CCF0; }
+        .field input:focus { outline: none; border-color: #A896E2; box-shadow: var(--clay-press), 0 0 0 3px rgba(110,82,196,.22); }
+        .pw-wrap { position: relative; }
+        .pw-wrap input { padding-right: 48px; }
+        .pw-toggle { position: absolute; right: 4px; top: 4px; width: 40px; height: 40px; display: grid; place-items: center; background: none; border: 0; border-radius: 10px; color: var(--muted); cursor: pointer; }
+        .pw-toggle:hover { color: var(--ink); }
+        .login-form .btn-primary { margin-top: 8px; }
+        .requester { margin-top: 24px; border: 1px solid var(--line); border-radius: 18px; background: var(--brand-tint); box-shadow: var(--clay-press); padding: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-decoration: none; color: var(--ink); transition: border-color .15s var(--ease); }
+        .requester:hover { border-color: var(--brand); }
+        .requester strong { display: block; font-size: 14px; font-weight: 600; }
+        .requester span { display: block; font-size: 13px; line-height: 1.45; color: var(--muted); margin-top: 2px; }
+        .requester svg { flex-shrink: 0; color: var(--brand); }
+        .foot { font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .foot a { color: var(--muted); }
+
+        /* Artwork (right) */
+        /* Panel width follows the artwork ratio (1024x1536) so the whole image shows, never cropped */
+        .hero { position: sticky; top: 0; height: 100vh; width: min(calc(100vh * 2 / 3), 55vw); background: var(--brand-deep); overflow: hidden; border-radius: 28px 0 0 28px; box-shadow: -10px 0 30px rgba(98,74,170,.18); }
+        .hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; }
+
+        @media (max-width: 960px) {
+            .shell { grid-template-columns: 1fr; }
+            main.signin { padding: 24px 20px; }
+            .hero { display: none; }
+            .panel { padding: 24px 20px; }
+            .panel-center { padding: 32px 0 48px; align-items: flex-start; }
         }
-        .login-logo {
-            width: 72px;
-            height: 72px;
-            background: linear-gradient(135deg, #0d9488, #0f766e);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            font-weight: 700;
-            color: white;
-            margin: 0 auto 24px;
-        }
-        .login-title { font-size: 24px; font-weight: 700; color: #1a202c; text-align: center; margin-bottom: 8px; }
-        .login-subtitle { font-size: 14px; color: #718096; text-align: center; margin-bottom: 32px; }
-        .login-form .form-group { margin-bottom: 20px; }
-        .login-form label { display: block; font-size: 14px; font-weight: 600; color: #2d3748; margin-bottom: 8px; }
-        .login-form input {
-            width: 100%;
-            padding: 14px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        .login-form input:focus { outline: none; border-color: #0d9488; }
-        .login-btn {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #0d9488, #0f766e);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 8px;
-        }
-        .login-btn:hover { opacity: 0.95; transform: translateY(-1px); }
-        .login-footer { margin-top: 24px; text-align: center; font-size: 13px; color: #718096; }
-        .login-footer a { color: #0d9488; text-decoration: none; }
-        .login-footer a:hover { text-decoration: underline; }
-        .login-error { display:none; background:#fee2e2; color:#dc2626; border-radius:8px; padding:10px 14px; font-size:14px; margin-bottom:16px; text-align:center; }
-        .login-btn:disabled { opacity:0.7; cursor:not-allowed; transform:none; }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
     </style>
 </head>
 <body>
-    <div class="login-page">
-        <div class="login-card">
-            <div class="login-logo">PL</div>
-            <h1 class="login-title">Lab Tech Login</h1>
-            <p class="login-subtitle">Sign in with your credentials</p>
-            <form class="login-form" id="login-form" onsubmit="return handleLogin(event)">
-                <div class="login-error" id="login-error"></div>
-                <div class="form-group">
-                    <label for="user-name">Email</label>
-                    <input type="email" id="user-name" placeholder="your@email.com" required autofocus>
-                </div>
-                <div class="form-group">
-                    <label for="user-pass">Password</label>
-                    <input type="password" id="user-pass" placeholder="Password" required>
-                </div>
-                <button type="submit" class="login-btn" id="login-btn">Sign In</button>
-            </form>
-            <div class="login-footer">
-                <a href="START-HERE.html">← Back to Start</a>
+    <div class="shell">
+        <div class="panel">
+            <div class="brand-top">
+                <img src="images/olfu-logo.png" alt="" width="44" height="44">
+                <div class="uni"><strong>PharmaLab</strong>OLFU College of Pharmacy · Valenzuela</div>
+            </div>
+
+            <div class="panel-center">
+                <main class="signin">
+                    <div class="eyebrow">Laboratory Services</div>
+                    <h1>Staff sign-in</h1>
+                    <p class="sub">For laboratory technicians and staff.</p>
+
+                    <div class="login-error" id="login-error" role="alert"></div>
+
+                    <button type="button" class="btn btn-google" id="google-btn" onclick="staffGoogleLogin()">
+                        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.2l7.8 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.5-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.8l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.8 6.1C6.6 42.6 14.6 48 24 48z"/></svg>
+                        Continue with Google
+                    </button>
+                    <p class="hint">@fatima.edu.ph accounts</p>
+
+                    <div class="divider">or with email and password</div>
+
+                    <form class="login-form" id="login-form" onsubmit="return handleLogin(event)">
+                        <div class="field">
+                            <label for="user-name">Email</label>
+                            <input type="email" id="user-name" autocomplete="username" placeholder="Your email" required>
+                        </div>
+                        <div class="field">
+                            <label for="user-pass">Password</label>
+                            <div class="pw-wrap">
+                                <input type="password" id="user-pass" autocomplete="current-password" required>
+                                <button type="button" class="pw-toggle" id="pw-toggle" aria-label="Show password" aria-pressed="false">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="login-btn">Sign in</button>
+                    </form>
+
+                    <a class="requester" href="student-dashboard.html">
+                        <div>
+                            <strong>Student or professor?</strong>
+                            <span>Sign in with your OLFU Google account to request materials.</span>
+                        </div>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </a>
+                </main>
+            </div>
+
+            <div class="foot">
+                <span>Our Lady of Fatima University</span>
             </div>
         </div>
+
+        <aside class="hero" aria-label="Laboratory Automation System, OLFU College of Pharmacy">
+            <img src="images/login-hero.jpg" alt="OLFU College of Pharmacy Laboratory Automation System artwork" width="1024" height="1536" onerror="this.remove()">
+        </aside>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
     <script src="js/supabase-data.js"></script>
     <script>
+        document.getElementById('pw-toggle').addEventListener('click', function () {
+            var input = document.getElementById('user-pass');
+            var show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            this.setAttribute('aria-pressed', String(show));
+            this.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        });
+
+        function loginRedirectTarget() {
+            var params = new URLSearchParams(window.location.search);
+            var redirect = params.get('redirect') || 'index.html';
+            if (!redirect.match(/^[a-zA-Z0-9_\-/.]+\.html/)) redirect = 'index.html';
+            return redirect;
+        }
+
+        function showLoginError(msg) {
+            var errEl = document.getElementById('login-error');
+            errEl.textContent = msg;
+            errEl.style.display = 'block';
+        }
+
+        // Only accounts with the staff role (staff_emails list) may enter staff pages.
+        async function routeSignedInUser(user) {
+            var res = await db.from('app_users').select('role').eq('id', user.id).maybeSingle();
+            var role = res.data && res.data.role;
+            if (role === 'staff') {
+                var name = (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)) || user.email;
+                setCurrentUser(name);
+                try { await addAuditEntry('Login', user.email + ' signed in'); } catch(_) {}
+                window.location.href = loginRedirectTarget();
+                return true;
+            }
+            if (role === 'student' || role === 'professor') {
+                window.location.href = 'student-dashboard.html';
+                return true;
+            }
+            await db.auth.signOut();
+            showLoginError('This account is not registered as lab staff. Ask the lab administrator to add your email.');
+            return false;
+        }
+
+        async function staffGoogleLogin() {
+            document.getElementById('google-btn').disabled = true;
+            var res = await db.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin + window.location.pathname + window.location.search,
+                    queryParams: { prompt: 'select_account', hd: 'fatima.edu.ph' }
+                }
+            });
+            if (res.error) { showLoginError(res.error.message); document.getElementById('google-btn').disabled = false; }
+        }
+
+        // Returning from Google (or already signed in): route by role.
+        (async function () {
+            var params = new URLSearchParams(window.location.search);
+            if (params.get('denied')) {
+                await db.auth.signOut();
+                showLoginError('This account is not registered as lab staff.');
+                return;
+            }
+            var session = (await db.auth.getSession()).data.session;
+            if (session) await routeSignedInUser(session.user);
+        })();
+
         async function handleLogin(e) {
             e.preventDefault();
             var email = (document.getElementById('user-name').value || '').trim();
@@ -104,7 +228,7 @@
 
             errEl.style.display = 'none';
             btn.disabled = true;
-            btn.textContent = 'Signing in...';
+            btn.textContent = 'Signing in…';
 
             var result = await db.auth.signInWithPassword({ email: email, password: pass });
 
@@ -112,16 +236,14 @@
                 errEl.textContent = 'Invalid email or password.';
                 errEl.style.display = 'block';
                 btn.disabled = false;
-                btn.textContent = 'Sign In';
+                btn.textContent = 'Sign in';
                 return false;
             }
 
-            setCurrentUser(email);
-            try { await addAuditEntry('Login', email + ' signed in'); } catch(_) {}
-            var params = new URLSearchParams(window.location.search);
-            var redirect = params.get('redirect') || 'index.html';
-            if (!redirect.match(/^[a-zA-Z0-9_\-/.]+\.html/)) redirect = 'index.html';
-            window.location.href = redirect;
+            if (!(await routeSignedInUser(result.data.user))) {
+                btn.disabled = false;
+                btn.textContent = 'Sign in';
+            }
             return false;
         }
     </script>

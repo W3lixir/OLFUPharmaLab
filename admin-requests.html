@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Request Management - PharmaLab</title>
     <link rel="stylesheet" href="css/lab-ui.css">
+    <link rel="stylesheet" href="css/clay-theme.css">
+    <style>
+        .date-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+        .date-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; min-height: 38px; border-radius: 999px; border: 1px solid var(--lab-border, #E6DFF4); background: var(--lab-surface, #FCFBFF); color: var(--lab-text, #2E2645); font-size: 14px; font-weight: 600; cursor: pointer; }
+        .date-chip:hover { background: #F3EFFC; }
+        .date-chip.active { background: #6E52C4; border-color: #6E52C4; color: #fff; }
+        .chip-count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: #EFEAFA; color: #5B41AE; font-size: 12px; font-variant-numeric: tabular-nums; text-align: center; }
+        .date-chip.active .chip-count { background: rgba(255, 255, 255, 0.22); color: #fff; }
+        .chip-count:empty { display: none; }
+        .sub-badge { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: #FDF0DC; color: #8F5208; font-size: 11px; font-weight: 700; white-space: nowrap; vertical-align: middle; }
+    </style>
 </head>
 <body>
     <nav class="top-nav">
@@ -95,6 +106,15 @@
                 <div class="stat-value" id="stat-total">—</div>
                 <div class="stat-label">Total This Month</div>
             </div>
+        </div>
+
+        <!-- Quick filters: what to prepare, by date needed -->
+        <div class="date-chips" role="group" aria-label="Filter by date needed">
+            <button type="button" class="date-chip active" data-range="" aria-pressed="true">All dates <span class="chip-count" data-count=""></span></button>
+            <button type="button" class="date-chip" data-range="today" aria-pressed="false">Today <span class="chip-count" data-count="today"></span></button>
+            <button type="button" class="date-chip" data-range="tomorrow" aria-pressed="false">Tomorrow <span class="chip-count" data-count="tomorrow"></span></button>
+            <button type="button" class="date-chip" data-range="week" aria-pressed="false">Next 7 days <span class="chip-count" data-count="week"></span></button>
+            <button type="button" class="date-chip" data-range="substitutes" aria-pressed="false">Has substitutes <span class="chip-count" data-count="substitutes"></span></button>
         </div>
 
         <!-- Filters -->
@@ -333,7 +353,30 @@
             updateStatistics();
         }
 
-        function getFilteredRequests() {
+        let dateRange = '';
+
+        function addDaysStr(ymd, days) {
+            const [y, m, d] = ymd.split('-').map(Number);
+            const t = new Date(Date.UTC(y, m - 1, d + days));
+            return t.toISOString().slice(0, 10);
+        }
+        function substituteCount(r) {
+            return (r.items || []).filter(it => it && it.substituteFor).length;
+        }
+        function inRange(r, range) {
+            if (!range) return true;
+            if (range === 'substitutes') return substituteCount(r) > 0;
+            const today = getTodayManilaDateStr();
+            const d = String(r.dateNeeded || '').slice(0, 10);
+            if (!d) return false;
+            if (range === 'today') return d === today;
+            if (range === 'tomorrow') return d === addDaysStr(today, 1);
+            if (range === 'week') return d >= today && d <= addDaysStr(today, 6);
+            return true;
+        }
+
+        function getFilteredRequests(rangeOverride) {
+            const range = rangeOverride === undefined ? dateRange : rangeOverride;
             const search = (document.getElementById('filter-search').value || '').toLowerCase();
             const status = document.getElementById('filter-status').value;
 
@@ -350,6 +393,7 @@
                 )) return false;
                 if (status && r.status !== status) return false;
                 if (requester && (r.requesterType || 'student') !== requester) return false;
+                if (!inRange(r, range)) return false;
                 return true;
             });
 
@@ -368,10 +412,10 @@
         function formatDate(dateString) {
             if (!dateString) return '-';
             const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
             });
         }
 
@@ -379,14 +423,14 @@
         function formatDateTime(dateString) {
             if (!dateString) return '-';
             const date = new Date(dateString);
-            const dateStr = date.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
+            const dateStr = date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
             });
-            const timeStr = date.toLocaleTimeString('en-US', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
+            const timeStr = date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
             });
             return `${dateStr} ${timeStr}`;
         }
@@ -395,12 +439,12 @@
         function formatDateNeeded(dateString, timeString) {
             if (!dateString) return '-';
             const date = new Date(dateString);
-            const dateStr = date.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
+            const dateStr = date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
             });
-            
+
             if (timeString) {
                 const [hours, minutes] = timeString.split(':');
                 const hour12 = hours % 12 || 12;
@@ -433,8 +477,8 @@
             const itemRows = items.map(item => `
                 <tr>
                     <td>${escHtml(item.category || '-')}</td>
-                    <td>${escHtml(item.name || '-')}</td>
-                    <td style="text-align:right;">${escHtml(item.quantity || '-')} ${escHtml(item.unit || '')}</td>
+                    <td>${escHtml(item.name || '-')}${itemSource(item) && item.source !== 'kit' ? '<br><small>' + escHtml(itemSource(item)) + '</small>' : ''}</td>
+                    <td style="text-align:right;">${escHtml(itemQty(item))} ${itemQty(item) === 'as needed' ? '' : escHtml(item.unit || '')}</td>
                 </tr>
             `).join('');
             const courseText = (request.course || '-') + (request.yearLevel ? ' - ' + request.yearLevel : '') + (request.section ? ', Section ' + request.section : '');
@@ -445,7 +489,7 @@
 <style>
 *{box-sizing:border-box;}body{font-family:Arial,sans-serif;color:#111827;padding:0;margin:0;background:#fff;}
 .header{text-align:center;border-bottom:2px solid #111827;padding-bottom:6px;margin-bottom:8px;}
-.brand{font-size:20px;font-weight:700;color:#0d9488;}.doc-title{font-size:13px;font-weight:700;margin-top:2px;}
+.brand{font-size:20px;font-weight:700;color:#6E52C4;}.doc-title{font-size:13px;font-weight:700;margin-top:2px;}
 .meta{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;}
 .box{border:1px solid #d1d5db;border-radius:6px;padding:6px 10px;}
 .label{font-size:9px;text-transform:uppercase;color:#6b7280;font-weight:700;margin-bottom:2px;}
@@ -456,7 +500,8 @@
 .timing.late{background:#fef3c7;color:#92400e;}
 .status{display:inline-block;padding:3px 10px;border-radius:999px;background:#e0f2fe;color:#0369a1;font-size:12px;font-weight:700;text-transform:capitalize;}
 @page{size:8.5in 13in;margin:0.4in;}@media print{.section,.box{break-inside:avoid;}}
-</style></head><body>
+</style>
+</head><body>
 <div class="header"><div class="brand">PharmaLab IMS</div><div class="doc-title">Request Details Printout</div></div>
 <div class="meta">
     <div class="box"><div class="label">Request ID</div><div class="value">${escHtml(request.requestId || '-')}</div></div>
@@ -503,12 +548,13 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
             tbody.innerHTML = '';
 
             const filtered = getFilteredRequests();
+            updateChipCounts();
 
             if (filtered.length === 0) {
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="10" style="text-align: center; padding: 40px; color: #718096;">
-                            No requests found. Requests submitted through the form will appear here.
+                            ${dateRange ? 'No requests match this quick filter.' : 'No requests found. Requests submitted through the form will appear here.'}
                         </td>
                     </tr>
                 `;
@@ -518,35 +564,41 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
             filtered.forEach(request => {
                 const row = document.createElement('tr');
                 row.onclick = () => openRequestDetail(request.requestId);
-                
-                const statusClass = request.status || 'pending';
-                const statusText = statusClass.charAt(0).toUpperCase() + statusClass.slice(1);
-                
-                let actionButton = '';
-                if (statusClass === 'pending') {
-                    actionButton = `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openRequestDetail('${request.requestId}')">Review</button>`;
-                } else if (statusClass === 'approved') {
-                    actionButton = `<button class="btn btn-warning btn-sm" style="background:#f59e0b;color:white;border:none;" onclick="event.stopPropagation(); openRequestDetail('${request.requestId}')">Release</button>`;
-                } else if (statusClass === 'released') {
-                    actionButton = `<button class="btn btn-sm" style="background:#8b5cf6;color:white;border:none;" onclick="event.stopPropagation(); openRequestDetail('${request.requestId}')">Return</button>`;
-                } else {
-                    actionButton = `<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); openRequestDetail('${request.requestId}')">View</button>`;
-                }
 
-                const dateNeededDisplay = (request.dateNeeded ? formatDateNeeded(request.dateNeeded, request.timeNeeded) : '-') + lateBadge(request);
-                
+                const KNOWN = ['pending', 'approved', 'released', 'returned', 'rejected'];
+                const statusClass = KNOWN.includes(request.status) ? request.status : 'pending';
+                const statusText = statusClass.charAt(0).toUpperCase() + statusClass.slice(1);
+
+                const ACTIONS = {
+                    pending:  ['Review', 'btn btn-primary btn-sm', ''],
+                    approved: ['Release', 'btn btn-warning btn-sm', 'background:#f59e0b;color:white;border:none;'],
+                    released: ['Return', 'btn btn-sm', 'background:#8b5cf6;color:white;border:none;'],
+                };
+                const [actionText, actionClass, actionStyle] = ACTIONS[statusClass] || ['View', 'btn btn-secondary btn-sm', ''];
+
+                const dateNeededDisplay = (request.dateNeeded ? escHtml(formatDateNeeded(request.dateNeeded, request.timeNeeded)) : '-') + lateBadge(request);
+                const subs = substituteCount(request);
+                const subBadge = subs ? ` <span class="sub-badge" title="Requester asked for substitute items">${subs} substitute${subs > 1 ? 's' : ''}</span>` : '';
+
                 row.innerHTML = `
-                    <td><strong>${request.requestId}</strong></td>
-                    <td>${request.studentName}</td>
-                    <td>${request.studentNumber}</td>
+                    <td><strong>${escHtml(request.requestId)}</strong></td>
+                    <td>${escHtml(request.studentName || '—')}</td>
+                    <td>${escHtml(request.studentNumber || '—')}</td>
                     <td>${request.requesterType === 'professor' ? 'Professor' : 'Student'}</td>
                     <td>${escHtml(request.instructor || '—')}</td>
-                    <td>${request.subject}</td>
+                    <td>${escHtml(request.subject || '—')}${subBadge}</td>
                     <td>${dateNeededDisplay}</td>
-                    <td>${formatDateTime(request.dateSubmitted)}</td>
+                    <td>${escHtml(formatDateTime(request.dateSubmitted))}</td>
                     <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                    <td>${actionButton}</td>
+                    <td></td>
                 `;
+                const actionBtn = document.createElement('button');
+                actionBtn.type = 'button';
+                actionBtn.className = actionClass;
+                if (actionStyle) actionBtn.style.cssText = actionStyle;
+                actionBtn.textContent = actionText;
+                actionBtn.addEventListener('click', event => { event.stopPropagation(); openRequestDetail(request.requestId); });
+                row.lastElementChild.appendChild(actionBtn);
                 tbody.appendChild(row);
                 const checklistLink = document.createElement('a');
                 checklistLink.className = 'btn btn-secondary btn-sm';
@@ -559,6 +611,24 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
                 row.lastElementChild.appendChild(checklistLink);
             });
         }
+
+        function updateChipCounts() {
+            document.querySelectorAll('.chip-count').forEach(el => {
+                el.textContent = getFilteredRequests(el.dataset.count).length;
+            });
+        }
+        document.querySelectorAll('.date-chip').forEach(chip => chip.addEventListener('click', () => {
+            dateRange = chip.dataset.range;
+            document.querySelectorAll('.date-chip').forEach(c => {
+                const on = c === chip;
+                c.classList.toggle('active', on);
+                c.setAttribute('aria-pressed', on ? 'true' : 'false');
+            });
+            // Looking at upcoming dates: show the earliest first.
+            const sort = document.getElementById('filter-sort');
+            if (dateRange && dateRange !== 'substitutes' && sort.value === 'submitted-desc') sort.value = 'needed-asc';
+            renderRequests();
+        }));
 
         // Update statistics (always uses full allRequests, not filtered)
         function updateStatistics() {
@@ -597,6 +667,16 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
 
             // Update modal title
             document.querySelector('.modal-title').textContent = `Request Details - ${request.requestId}`;
+            const subs = substituteCount(request);
+            document.getElementById('modal-sub-note')?.remove();
+            if (subs) {
+                const note = document.createElement('div');
+                note.id = 'modal-sub-note';
+                note.className = 'sub-badge';
+                note.style.cssText = 'display:inline-block;margin:0 0 12px;font-size:13px;';
+                note.textContent = `${subs} substitute item${subs > 1 ? 's' : ''} requested: check availability before approving`;
+                document.querySelector('#requestModal .modal-body').prepend(note);
+            }
 
             // Update requester information
             const isProf = (request.requesterType || 'student') === 'professor';
@@ -608,18 +688,18 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
                 </div>
                 <div class="info-row">
                     <span class="info-label">Full Name</span>
-                    <span class="info-value">${request.studentName}</span>
+                    <span class="info-value">${escHtml(request.studentName || '-')}</span>
                 </div>
-                ${!isProf ? `<div class="info-row"><span class="info-label">Student Number</span><span class="info-value">${request.studentNumber || '-'}</span></div>` : ''}
-                ${!isProf ? `<div class="info-row"><span class="info-label">Contact Number</span><span class="info-value">${request.contactNumber || '-'}</span></div>` : ''}
+                ${!isProf ? `<div class="info-row"><span class="info-label">Student Number</span><span class="info-value">${escHtml(request.studentNumber || '-')}</span></div>` : ''}
+                ${!isProf ? `<div class="info-row"><span class="info-label">Contact Number</span><span class="info-value">${escHtml(request.contactNumber || '-')}</span></div>` : ''}
                 <div class="info-row">
                     <span class="info-label">${isProf ? 'Department / Course' : 'Course & Year'}</span>
-                    <span class="info-value">${(request.course || '-') + (request.yearLevel ? ' - ' + request.yearLevel : '') + (request.section ? ', Section ' + request.section : '')}</span>
+                    <span class="info-value">${escHtml((request.course || '-') + (request.yearLevel ? ' - ' + request.yearLevel : '') + (request.section ? ', Section ' + request.section : ''))}</span>
                 </div>
                 ${isProf && request.projectTitle ? `
                 <div class="info-row">
                     <span class="info-label">Project / Research</span>
-                    <span class="info-value">${request.projectTitle}</span>
+                    <span class="info-value">${escHtml(request.projectTitle)}</span>
                 </div>` : ''}
             `;
 
@@ -628,19 +708,19 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
                 <div class="info-section-title">Request Details</div>
                 <div class="info-row">
                     <span class="info-label">Subject</span>
-                    <span class="info-value">${request.subject}</span>
+                    <span class="info-value">${escHtml(request.subject || '-')}</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Experiment Name</span>
-                    <span class="info-value">${request.activity}</span>
+                    <span class="info-value">${escHtml(request.activity || '-')}</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Instructor</span>
-                    <span class="info-value">${request.instructor}</span>
+                    <span class="info-value">${escHtml(request.instructor || '-')}</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Date Needed</span>
-                    <span class="info-value">${formatDateNeeded(request.dateNeeded, request.timeNeeded)}${lateBadge(request)}</span>
+                    <span class="info-value">${escHtml(formatDateNeeded(request.dateNeeded, request.timeNeeded))}${lateBadge(request)}</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Date Submitted</span>
@@ -648,7 +728,7 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
                 </div>
                 <div class="info-row">
                     <span class="info-label">Laboratory</span>
-                    <span class="info-value">${request.laboratory}</span>
+                    <span class="info-value">${escHtml(request.laboratory || request.roomAssignmentName || '-')}</span>
                 </div>
             `;
 
@@ -662,11 +742,12 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
             itemsTableBody.innerHTML = '';
             sortedItems.forEach(item => {
                 const row = document.createElement('tr');
+                const src = itemSource(item);
                 row.innerHTML = `
-                    <td style="color:#6b7280;font-size:13px;">${item.category || '—'}</td>
-                    <td>${item.name}</td>
-                    <td>${item.quantity}</td>
-                    <td>${item.unit}</td>
+                    <td style="color:#6b7280;font-size:13px;">${escHtml(item.category || '—')}</td>
+                    <td>${escHtml(item.name)}${src ? `<div style="font-size:12px;color:${item.substituteFor ? '#A8620C' : '#675F82'};margin-top:2px;">${escHtml(src)}</div>` : ''}</td>
+                    <td>${escHtml(itemQty(item))}</td>
+                    <td>${itemQty(item) === 'as needed' ? '' : escHtml(item.unit || '')}</td>
                     <td><span class="status-badge approved">Available</span></td>
                 `;
                 itemsTableBody.appendChild(row);
@@ -734,6 +815,17 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
             }
         }
 
+        // Kit / additional / substitute label for an item (experiment kits)
+        function itemSource(item) {
+            if (item.substituteFor) return 'Substitute for ' + item.substituteFor;
+            if (item.source === 'additional') return 'Additional item';
+            if (item.source === 'kit') return 'Experiment kit';
+            return '';
+        }
+        function itemQty(item) {
+            return item.quantity === '' || item.quantity == null ? 'as needed' : item.quantity;
+        }
+
         async function releaseRequest() {
             if (!currentRequestData) return;
             if (!confirm('Mark this request as Released? This will deduct the requested items from inventory.')) return;
@@ -753,29 +845,42 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
                     const { data: chemicals, error: chemErr } = await db.from('chemicals').select('id,name,category,quantity,unit');
                     if (chemErr) throw chemErr;
                     const norm = v => String(v || '').trim().toLowerCase();
-                    for (const item of items) {
+                    // Remember exactly which inventory row and how much was taken, so a return
+                    // puts back the same row and never more than was deducted.
+                    const releasedItems = items.map(it => ({ ...it }));
+                    for (const [idx, item] of items.entries()) {
                         const isBorrow = borrowCategories.includes(item.category);
-                        const match = (chemicals || []).find(c =>
-                            norm(c.name) === norm(item.name) && norm(c.category) === norm(item.category)
-                        );
+                        const match = (item.itemId && (chemicals || []).find(c => String(c.id) === String(item.itemId)))
+                            || (chemicals || []).find(c => norm(c.name) === norm(item.name) && norm(c.category) === norm(item.category));
                         const qty = Number(item.quantity) || 0;
                         const unit = item.unit || (match?.unit) || 'pcs';
                         const unitMismatch = match && !isBorrow && item.unit && match.unit && norm(item.unit) !== norm(match.unit);
 
-                        if (!match) {
+                        if (item.quantity === '' || item.quantity == null) {
+                            skipped.push(`${item.name} — quantity "as needed", deduct manually`);
+                        } else if (!match) {
                             skipped.push(`${item.name} — not found in inventory`);
                         } else if (unitMismatch) {
                             skipped.push(`${item.name} — requested in ${item.unit}, stock is in ${match.unit}`);
                         } else if (qty > 0) {
-                            const newQty = Math.max(0, Number(match.quantity || 0) - qty);
+                            const onHand = Number(match.quantity || 0);
+                            const taken = Math.min(qty, Math.max(0, onHand));
+                            const newQty = Math.max(0, onHand - qty);
                             const { error: updErr } = await db.from('chemicals').update({ quantity: newQty }).eq('id', match.id);
                             if (updErr) throw updErr;
                             match.quantity = newQty;
+                            releasedItems[idx].releasedFrom = match.id;
+                            releasedItems[idx].deductedQty = taken;
+                            if (taken < qty) skipped.push(`${item.name} — only ${taken} ${unit} was in stock (requested ${qty})`);
                         }
 
                         const details = `${item.name} | ${item.category} | ${qty} ${unit} | ${isBorrow ? 'Borrower' : 'Student'}: ${borrower} | Req: ${currentRequestData.requestId}`;
                         await addAuditEntry(isBorrow ? 'Borrow' : 'Dispense', details);
                     }
+                    const { error: saveErr } = await db.from('requests').update({ items: releasedItems })
+                        .eq('request_id', currentRequestData.requestId);
+                    if (saveErr) throw saveErr;
+                    currentRequestData.items = releasedItems;
                 }
 
                 if (skipped.length > 0) {
@@ -813,45 +918,49 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
 
             const studentName = currentRequestData.studentName || '';
 
-            // Build checklist
+            // Build checklist: per item, how many came back Good / Damaged; the rest is Missing.
+            const box = 'width:72px;padding:6px 8px;border:2px solid #e2e8f0;border-radius:6px;font-size:14px;text-align:center;';
+            const lbl = 'display:block;font-size:11px;font-weight:600;color:#4a5568;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em;';
             document.getElementById('return-checklist').innerHTML = `
                 <div style="background:#f7fafc;border-radius:10px;padding:16px;">
-                    <div style="font-size:13px;font-weight:600;color:#2d3748;margin-bottom:12px;">Items to Return</div>
-                    ${items.map((it, i) => `
-                        <div style="padding:10px 0;border-bottom:1px solid #e2e8f0;">
-                            <div style="display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center;">
-                                <input type="checkbox" id="ret-chk-${i}" checked style="width:18px;height:18px;cursor:pointer;">
+                    <div style="font-size:13px;font-weight:600;color:#2d3748;margin-bottom:4px;">Items to Return</div>
+                    <div style="font-size:12px;color:#718096;margin-bottom:10px;">Enter how many came back in good condition and how many are damaged. Anything not counted is recorded as missing.</div>
+                    ${items.map((it, i) => {
+                        const borrowed = returnBase(it);
+                        const requested = Math.max(0, Number(it.quantity) || 0);
+                        return `
+                        <div class="ret-row" data-i="${i}" style="padding:12px 0;border-bottom:1px solid #e2e8f0;">
+                            <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:12px;align-items:end;">
                                 <div>
-                                    <div style="font-weight:500;font-size:14px;color:#1a202c;">${it.name}</div>
-                                    <div style="font-size:12px;color:#718096;">${it.category} — Original: ${it.quantity} ${it.unit}</div>
+                                    <div style="font-weight:600;font-size:14px;color:#1a202c;">${escHtml(it.name)}</div>
+                                    <div style="font-size:12px;color:#718096;">${escHtml(it.category)} · Released: <strong>${escHtml(borrowed)}</strong> ${escHtml(it.unit || '')}${borrowed !== requested ? ` <span style="color:#A8620C;">(requested ${escHtml(requested)})</span>` : ''}</div>
                                 </div>
-                                <input type="number" id="ret-qty-${i}" value="${it.quantity}" min="0" max="${it.quantity}"
-                                    style="width:70px;padding:6px 10px;border:2px solid #e2e8f0;border-radius:6px;font-size:14px;text-align:center;">
-                                <select id="ret-cond-${i}" onchange="toggleDamageFields(${i})" style="padding:6px 8px;border:2px solid #e2e8f0;border-radius:6px;font-size:13px;">
-                                    <option value="Good">Good</option>
-                                    <option value="Damaged">Damaged</option>
-                                    <option value="Missing">Missing</option>
-                                </select>
+                                <label><span style="${lbl}">Good</span>
+                                    <input type="number" id="ret-good-${i}" value="${borrowed}" min="0" max="${borrowed}" step="1" inputmode="numeric" oninput="updateReturnRow(${i})" style="${box}" aria-label="${escHtml(it.name)} returned in good condition"></label>
+                                <label><span style="${lbl}">Damaged</span>
+                                    <input type="number" id="ret-bad-${i}" value="0" min="0" max="${borrowed}" step="1" inputmode="numeric" oninput="updateReturnRow(${i})" style="${box}" aria-label="${escHtml(it.name)} damaged"></label>
+                                <div><span style="${lbl}">Missing</span>
+                                    <output id="ret-missing-${i}" style="display:inline-block;${box}background:#fff;font-weight:600;" aria-live="polite">0</output></div>
                             </div>
+                            <div id="ret-error-${i}" style="display:none;margin-top:6px;font-size:12px;color:#C23A52;font-weight:600;"></div>
                             <div id="ret-damage-${i}" style="display:none;margin-top:10px;padding:12px;background:#fff3cd;border-radius:8px;border:1px solid #ffc107;">
-                                <div style="font-size:12px;font-weight:600;color:#856404;margin-bottom:8px;">Incident Details</div>
+                                <div style="font-size:12px;font-weight:600;color:#856404;margin-bottom:8px;">Incident details (for the breakage log)</div>
                                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                                     <div>
-                                        <label style="font-size:12px;font-weight:600;color:#4a5568;display:block;margin-bottom:4px;">Student Name</label>
-                                        <input type="text" id="ret-name-${i}" value="${studentName}"
-                                            placeholder="Student name"
+                                        <label for="ret-name-${i}" style="font-size:12px;font-weight:600;color:#4a5568;display:block;margin-bottom:4px;">Student Name</label>
+                                        <input type="text" id="ret-name-${i}" value="${escHtml(studentName)}" placeholder="Student name"
                                             style="width:100%;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:13px;box-sizing:border-box;">
                                     </div>
                                     <div>
-                                        <label style="font-size:12px;font-weight:600;color:#4a5568;display:block;margin-bottom:4px;">Group</label>
+                                        <label for="ret-group-${i}" style="font-size:12px;font-weight:600;color:#4a5568;display:block;margin-bottom:4px;">Group</label>
                                         <select id="ret-group-${i}" style="width:100%;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:13px;">
                                             ${groupOptions}
                                         </select>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    `).join('')}
+                        </div>`;
+                    }).join('')}
                 </div>`;
 
             // Store items ref for confirmReturn
@@ -859,10 +968,28 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
             document.getElementById('returnModal').style.display = 'flex';
         }
 
-        function toggleDamageFields(i) {
-            const cond = document.getElementById(`ret-cond-${i}`).value;
-            const el   = document.getElementById(`ret-damage-${i}`);
-            if (el) el.style.display = (cond === 'Damaged' || cond === 'Missing') ? 'block' : 'none';
+        // Good + Damaged must not exceed what was borrowed; the remainder is Missing.
+        // Quantity that actually left the lab: what was deducted at release (stock may have been short),
+        // or the requested quantity for items not tracked in inventory / released before this was recorded.
+        function returnBase(it) {
+            if (it && it.deductedQty != null && Number.isFinite(Number(it.deductedQty))) return Math.max(0, Number(it.deductedQty));
+            return Math.max(0, Number(it && it.quantity) || 0);
+        }
+        function returnCounts(i) {
+            const it = (document.getElementById('returnModal')._items || [])[i] || {};
+            const borrowed = returnBase(it);
+            const read = id => { const v = Number(document.getElementById(id)?.value); return Number.isFinite(v) && v > 0 ? Math.floor(v) : 0; };
+            const good = read(`ret-good-${i}`), bad = read(`ret-bad-${i}`);
+            return { borrowed, good, bad, missing: Math.max(0, borrowed - good - bad), over: good + bad > borrowed };
+        }
+        function updateReturnRow(i) {
+            const c = returnCounts(i);
+            const out = document.getElementById(`ret-missing-${i}`);
+            if (out) { out.textContent = c.missing; out.style.color = c.missing ? '#C23A52' : ''; }
+            const err = document.getElementById(`ret-error-${i}`);
+            if (err) { err.style.display = c.over ? 'block' : 'none'; err.textContent = c.over ? `Good + Damaged is more than the ${c.borrowed} released.` : ''; }
+            const dmg = document.getElementById(`ret-damage-${i}`);
+            if (dmg) dmg.style.display = (c.bad > 0 || c.missing > 0) ? 'block' : 'none';
         }
 
         function closeReturnModal() {
@@ -884,49 +1011,65 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
                 const { data: chemicals } = await db.from('chemicals').select('id,name,category,quantity,unit');
                 const borrowCategories = ['Glassware', 'Equipment'];
 
+                // Validate every row first so nothing is half-saved.
                 for (let i = 0; i < items.length; i++) {
-                    const checked   = document.getElementById(`ret-chk-${i}`)?.checked;
-                    const qtyRet    = parseInt(document.getElementById(`ret-qty-${i}`)?.value || '0', 10);
-                    const condition = document.getElementById(`ret-cond-${i}`)?.value || 'Good';
-                    const it        = items[i];
+                    if (returnCounts(i).over) {
+                        updateReturnRow(i);
+                        alert(`"${items[i].name}": Good + Damaged is more than the quantity borrowed.`);
+                        return;
+                    }
+                }
 
-                    if (!checked || qtyRet <= 0) continue;
+                const summary = [];
+                for (let i = 0; i < items.length; i++) {
+                    const it = items[i];
+                    const { borrowed, good, bad, missing } = returnCounts(i);
+                    if (borrowed <= 0) continue;
 
-                    // Add quantity back to inventory
-                    const match = (chemicals || []).find(c =>
-                        c.name.toLowerCase() === it.name.toLowerCase() &&
+                    // Good items go back to the same inventory row they were taken from, never more than was deducted.
+                    // Damaged / missing items are not usable stock: they go to the breakage log only.
+                    const byId = id => id && (chemicals || []).find(c => String(c.id) === String(id));
+                    const match = byId(it.releasedFrom) || byId(it.itemId) || (chemicals || []).find(c =>
+                        c.name.toLowerCase() === String(it.name || '').toLowerCase() &&
                         borrowCategories.includes(c.category)
                     );
-                    if (match) {
-                        const restored = Number(match.quantity || 0) + qtyRet;
-                        await db.from('chemicals').update({ quantity: restored }).eq('id', match.id);
+                    if (match && good > 0) {
+                        const cap = it.deductedQty != null ? Number(it.deductedQty) : good;
+                        const back = Math.min(good, cap);
+                        if (back > 0) {
+                            const restored = Number(match.quantity || 0) + back;
+                            const { error: rErr } = await db.from('chemicals').update({ quantity: restored }).eq('id', match.id);
+                            if (rErr) throw rErr;
+                            match.quantity = restored;
+                        }
                     }
 
-                    // Log return to audit_log
-                    const details = `${it.name} | ${it.category} | ${qtyRet} ${it.unit} | Borrower: ${borrower} | Condition: ${condition} | Received by: ${receivedBy} | Req: ${reqId}`;
+                    const details = `${it.name} | ${it.category} | Borrowed ${borrowed} ${it.unit || ''} | Good ${good}, Damaged ${bad}, Missing ${missing} | Borrower: ${borrower} | Received by: ${receivedBy} | Req: ${reqId}`;
                     await addAuditEntry('Return', details);
+                    if (bad || missing) summary.push(`${it.name}: ${bad ? bad + ' damaged' : ''}${bad && missing ? ', ' : ''}${missing ? missing + ' missing' : ''}`);
 
-                    // Auto-log to breakage table if condition is not Good
-                    if (condition === 'Damaged' || condition === 'Missing') {
-                        const incidentType  = condition === 'Missing' ? 'missing' : 'breakage';
-                        const damageStudent = (document.getElementById(`ret-name-${i}`)?.value || '').trim()
-                                              || currentRequestData.studentName || borrower;
-                        const damageGroup   = document.getElementById(`ret-group-${i}`)?.value || '';
+                    const damageStudent = (document.getElementById(`ret-name-${i}`)?.value || '').trim()
+                                          || currentRequestData.studentName || borrower;
+                    const damageGroup   = document.getElementById(`ret-group-${i}`)?.value || '';
+                    const incidents = [['breakage', bad, 'damaged'], ['missing', missing, 'missing (not returned)']];
+                    for (const [type, n, label] of incidents) {
+                        if (!n) continue;
                         try {
                             await addBreakage({
+                                id:            `brk-${Date.now()}-${i}-${type}`,
                                 requestId:     reqId,
                                 studentName:   damageStudent,
                                 studentNumber: currentRequestData.studentNumber || '',
                                 groupName:     damageGroup,
                                 itemName:      it.name,
-                                quantity:      qtyRet,
+                                quantity:      n,
                                 unit:          it.unit || '',
-                                incidentType:  incidentType,
-                                description:   `Returned in ${condition} condition.${damageGroup ? ' Group: ' + damageGroup : ''}`,
+                                incidentType:  type,
+                                description:   `${n} of ${borrowed} ${label} on return.${damageGroup ? ' Group: ' + damageGroup : ''}`,
                             });
                         } catch (bErr) {
                             console.error('[Breakage insert failed]', bErr);
-                            alert(`Warning: Return was saved but the breakage entry for "${it.name}" could not be logged.\n\nError: ${bErr.message}\n\nCheck if the breakages table exists in Supabase.`);
+                            alert(`Warning: Return was saved but the ${type} entry for "${it.name}" could not be logged.\n\nError: ${bErr.message}`);
                         }
                     }
                 }
@@ -939,7 +1082,7 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
                 closeReturnModal();
                 await loadRequests();
                 closeModal();
-                alert('Return processed successfully!');
+                alert('Return processed successfully!' + (summary.length ? '\n\nLogged to Breakage / Damage:\n• ' + summary.join('\n• ') : ''));
             } catch (err) {
                 alert('Error processing return: ' + (err.message || err));
             }

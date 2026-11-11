@@ -1,0 +1,245 @@
+/**
+ * PharmaLab — Light violet claymorphism theme
+ * Loaded AFTER css/lab-ui.css on every screen page (never on print pages).
+ * Soft, low-glare surfaces: lavender background, puffy rounded cards with
+ * gentle outer + inner shadows. Text keeps WCAG AA contrast.
+ */
+
+:root {
+  /* Violet brand (matches the College of Pharmacy login artwork) */
+  --lab-primary:        #6E52C4;
+  --lab-primary-hover:  #5B41AE;
+  --lab-primary-light:  #E9E2FA;
+  --lab-primary-bg:     #F3EFFC;
+
+  /* Light clay sidebar */
+  --lab-sidebar-bg:         #F7F4FD;
+  --lab-sidebar-hover:      #EEE8FB;
+  --lab-sidebar-active-bg:  #FFFFFF;
+  --lab-sidebar-active:     #5B41AE;
+  --lab-sidebar-text:       #5C5476;
+  --lab-sidebar-text-head:  #2E2645;
+
+  /* Surfaces & text */
+  --lab-bg:           #F1EDF9;
+  --lab-surface:      #FCFBFF;
+  --lab-border:       #E6DFF4;
+  --lab-border-light: #F6F3FC;
+  --lab-text:         #2E2645;
+  --lab-text-muted:   #675F82;
+  --lab-text-subtle:  #9890B0;
+
+  /* Soft semantic colors (pastel backgrounds, readable text) */
+  --lab-success:     #23845A;
+  --lab-success-bg:  #E5F5EC;
+  --lab-warning:     #A8620C;
+  --lab-warning-bg:  #FDF0DC;
+  --lab-danger:      #C23A52;
+  --lab-danger-bg:   #FCE8EC;
+  --lab-info:        #3E68C4;
+  --lab-info-bg:     #E8EEFB;
+
+  /* Clay geometry */
+  --lab-radius:    12px;
+  --lab-radius-lg: 20px;
+  --lab-radius-xl: 26px;
+
+  /* Clay shadows: soft violet drop + white highlight + subtle inner volume */
+  --clay-out:    10px 10px 24px rgba(98, 74, 170, 0.13), -8px -8px 20px rgba(255, 255, 255, 0.85);
+  --clay-out-sm: 5px 5px 12px rgba(98, 74, 170, 0.12), -4px -4px 10px rgba(255, 255, 255, 0.85);
+  --clay-in:     inset 2px 2px 5px rgba(255, 255, 255, 0.9), inset -3px -3px 8px rgba(98, 74, 170, 0.07);
+  --clay-press:  inset 3px 3px 7px rgba(98, 74, 170, 0.12), inset -3px -3px 7px rgba(255, 255, 255, 0.95);
+  --clay-ease:   cubic-bezier(0.2, 0, 0, 1);
+
+  --shadow-xs: var(--clay-out-sm);
+  --shadow-sm: var(--clay-out-sm);
+  --shadow-md: var(--clay-out);
+  --shadow-lg: var(--clay-out);
+  --shadow-xl: 16px 16px 40px rgba(98, 74, 170, 0.18), -10px -10px 28px rgba(255, 255, 255, 0.7);
+}
+
+body {
+  background: linear-gradient(160deg, #F6F2FD 0%, #EFEAFA 55%, #ECE6F9 100%) fixed;
+  color: var(--lab-text);
+}
+
+/* ── Top bar ─────────────────────────────────────────────── */
+.top-nav {
+  background: rgba(252, 251, 255, 0.92);
+  border-bottom: 1px solid var(--lab-border);
+  box-shadow: 0 6px 20px rgba(98, 74, 170, 0.08);
+}
+.user-avatar {
+  background: linear-gradient(145deg, #8A70DA, #6A4FC0);
+  box-shadow: 3px 3px 8px rgba(98, 74, 170, 0.3), inset 1px 1px 2px rgba(255, 255, 255, 0.4);
+}
+.user-profile { border-radius: var(--lab-radius); }
+.logout-link { color: var(--lab-primary) !important; }
+
+/* ── Sidebar (light clay panel) ──────────────────────────── */
+.sidebar {
+  background: var(--lab-sidebar-bg);
+  border-right: 1px solid var(--lab-border);
+  box-shadow: 6px 0 24px rgba(98, 74, 170, 0.07);
+}
+.menu-item {
+  color: var(--lab-sidebar-text);
+  border-left: 0;
+  border-radius: 14px;
+  margin: 3px 12px;
+  padding: 10px 14px;
+  transition: background-color .15s var(--clay-ease), color .15s var(--clay-ease), box-shadow .15s var(--clay-ease);
+}
+.menu-item:hover {
+  background: var(--lab-sidebar-hover);
+  color: var(--lab-sidebar-text-head);
+}
+.menu-item.active {
+  background: var(--lab-sidebar-active-bg);
+  color: var(--lab-sidebar-active);
+  box-shadow: var(--clay-out-sm), var(--clay-in);
+}
+.menu-settings { border-top: 1px solid var(--lab-border); }
+.sidebar-footer {
+  background: transparent;
+  border-top: 1px solid var(--lab-border);
+  color: var(--lab-text-muted);
+}
+.sidebar-menu::-webkit-scrollbar-thumb { background: #DCD3F1; }
+.sidebar-overlay.active { background: rgba(46, 38, 69, 0.35); }
+
+/* ── Clay cards ──────────────────────────────────────────── */
+.stat-box, .stat-card,
+.filters,
+.table-container,
+.activity-section,
+.today-card,
+.record-table-controls,
+.section-card,
+.action-btn-card {
+  background: var(--lab-surface);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--lab-radius-lg);
+  box-shadow: var(--clay-out), var(--clay-in);
+}
+.stat-box::before, .stat-card::before { display: none; }
+.stat-box:hover, .stat-card:hover,
+.action-btn-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 14px 14px 30px rgba(98, 74, 170, 0.16), -8px -8px 20px rgba(255, 255, 255, 0.9), var(--clay-in);
+}
+.stat-icon {
+  border-radius: 14px;
+  box-shadow: var(--clay-out-sm), var(--clay-in);
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn {
+  border-radius: 14px;
+  transition: transform .15s var(--clay-ease), box-shadow .15s var(--clay-ease), background-color .15s var(--clay-ease);
+}
+.btn-primary {
+  background: linear-gradient(145deg, #7D62D2, #6247BC);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 6px 6px 14px rgba(98, 74, 170, 0.3), inset 2px 2px 4px rgba(255, 255, 255, 0.3), inset -2px -2px 5px rgba(48, 28, 120, 0.25);
+}
+.btn-primary:hover { background: linear-gradient(145deg, #7258CA, #563DAE); }
+.btn-primary:active, .btn-secondary:active, .btn-success:active, .btn-export:active, .btn-danger:active { transform: translateY(1px); }
+.btn-secondary {
+  background: var(--lab-surface);
+  color: var(--lab-text);
+  border: 1px solid var(--lab-border);
+  box-shadow: var(--clay-out-sm), var(--clay-in);
+}
+.btn-secondary:hover { background: #F6F2FE; color: var(--lab-primary-hover); }
+.btn-export, .btn-success {
+  background: linear-gradient(145deg, #3BA676, #23845A);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 5px 5px 12px rgba(35, 132, 90, 0.25), inset 2px 2px 4px rgba(255, 255, 255, 0.3);
+}
+.btn-danger {
+  background: linear-gradient(145deg, #D4566C, #B9344C);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 5px 5px 12px rgba(194, 58, 82, 0.25), inset 2px 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+/* ── Inputs: pressed-in clay ─────────────────────────────── */
+.filter-select,
+.lab-form-input, .lab-form-select, .lab-form-textarea,
+.comment-textarea,
+.record-table-controls select, .record-table-controls input,
+.main-content input[type="text"], .main-content input[type="search"], .main-content input[type="number"],
+.main-content input[type="date"], .main-content input[type="time"], .main-content input[type="email"],
+.main-content input[type="tel"], .main-content select, .main-content textarea {
+  background: #F8F5FE;
+  border: 1px solid var(--lab-border);
+  border-radius: var(--lab-radius);
+  box-shadow: var(--clay-press);
+  color: var(--lab-text);
+}
+.filter-select:focus,
+.lab-form-input:focus, .lab-form-select:focus, .lab-form-textarea:focus,
+.comment-textarea:focus,
+.main-content input:focus, .main-content select:focus, .main-content textarea:focus {
+  outline: none;
+  border-color: #A896E2;
+  box-shadow: var(--clay-press), 0 0 0 3px rgba(110, 82, 196, 0.22);
+}
+
+/* ── Tables (kept flat inside the clay card for readability) ── */
+.equipment-table thead, .items-table th { background: #F4F0FC; }
+.equipment-table th { color: var(--lab-text-muted); border-bottom: 1px solid var(--lab-border); }
+.equipment-table td { border-bottom: 1px solid #EFEAF8; }
+.equipment-table tbody tr:hover { background: #F8F5FE; }
+.equipment-action-btn { border-radius: 10px; }
+
+/* ── Badges: soft pastel pills ───────────────────────────── */
+.status-badge, .alert-badge { border-radius: 999px; box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.7); }
+.status-badge.pending  { background: #FDF0DC; color: #8F5208; }
+.status-badge.approved { background: var(--lab-info-bg); color: var(--lab-info); }
+.status-badge.released { background: var(--lab-primary-light); color: var(--lab-primary-hover); }
+.status-badge.returned { background: #EFEDF5; color: #575170; }
+
+/* ── Tabs ────────────────────────────────────────────────── */
+.page-tabs { border-bottom: 0; gap: 8px; flex-wrap: wrap; }
+.page-tab { border-radius: 14px; border-bottom: 0 !important; padding: 9px 16px; }
+.page-tab:hover { background: var(--lab-sidebar-hover); }
+.page-tab.active {
+  background: var(--lab-surface);
+  color: var(--lab-primary-hover);
+  box-shadow: var(--clay-out-sm), var(--clay-in);
+}
+
+/* ── Modals ──────────────────────────────────────────────── */
+.lab-modal, .modal-content {
+  background: var(--lab-surface);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--lab-radius-xl);
+  box-shadow: var(--shadow-xl), var(--clay-in);
+}
+.lab-modal-overlay, .modal { background: rgba(46, 38, 69, 0.35); }
+.lab-modal-close, .modal-close { border-radius: 12px; }
+
+/* ── Misc ────────────────────────────────────────────────── */
+.page-title { color: var(--lab-text); }
+.breadcrumb a { color: var(--lab-primary); }
+.sds-btn { border-radius: 10px; }
+.hamburger-btn { border-radius: 12px; }
+
+:focus-visible { outline: 3px solid rgba(110, 82, 196, 0.45); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+  .stat-box:hover, .stat-card:hover, .action-btn-card:hover { transform: none; }
+}
+
+/* Dashboard activity pills (alert-badge variants) */
+.alert-badge { padding: 4px 12px; text-transform: capitalize; }
+.alert-badge.warning  { background: #FDF0DC; color: #8F5208; }
+.alert-badge.approved, .alert-badge.info { background: var(--lab-info-bg); color: var(--lab-info); }
+.alert-badge.success  { background: var(--lab-success-bg); color: var(--lab-success); }
+.alert-badge.danger   { background: var(--lab-danger-bg); color: var(--lab-danger); }
+
+/* Header banner artwork */
+.page-banner { display: block; width: 100%; height: auto; aspect-ratio: 2172 / 280; object-fit: cover; border-radius: var(--lab-radius-lg); box-shadow: var(--clay-out); margin-bottom: 24px; }

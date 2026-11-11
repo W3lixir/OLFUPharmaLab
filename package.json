@@ -4,8 +4,8 @@
   "description": "Laboratory Inventory Management System - College of Pharmacy",
   "private": true,
   "scripts": {
-    "dev": "live-server --port=3000 --open=/START-HERE.html",
-    "start": "live-server --port=3000 --open=/START-HERE.html",
+    "dev": "live-server --port=3000 --open=/login.html",
+    "start": "live-server --port=3000 --open=/login.html",
     "serve": "live-server --port=3000"
   },
   "keywords": [

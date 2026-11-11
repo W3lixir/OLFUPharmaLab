@@ -28,7 +28,7 @@
         .top-nav-left { display: flex; align-items: center; gap: 12px; }
         .logo-placeholder {
             width: 36px; height: 36px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #6E52C4, #8A63C9);
             border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
             font-weight: 700; color: white; font-size: 14px;
@@ -44,7 +44,7 @@
 
         /* Welcome banner */
         .welcome-banner {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #6E52C4 0%, #8A63C9 100%);
             border-radius: 16px;
             padding: 32px;
             color: white;
@@ -71,7 +71,7 @@
             transition: all 0.2s;
             display: block;
         }
-        .action-card:hover { border-color: #667eea; transform: translateY(-2px); box-shadow: 0 4px 16px rgba(102,126,234,0.15); }
+        .action-card:hover { border-color: #6E52C4; transform: translateY(-2px); box-shadow: 0 4px 16px rgba(102,126,234,0.15); }
         .action-icon { font-size: 32px; margin-bottom: 12px; }
         .action-title { font-weight: 600; font-size: 15px; }
         .action-desc { font-size: 13px; color: #718096; margin-top: 4px; }
@@ -96,7 +96,7 @@
             font-size: 15px;
             font-family: inherit;
         }
-        .track-input:focus { outline: none; border-color: #667eea; }
+        .track-input:focus { outline: none; border-color: #6E52C4; }
         .btn {
             padding: 12px 24px;
             border-radius: 8px;
@@ -105,7 +105,7 @@
             cursor: pointer;
             border: none;
         }
-        .btn-primary { background: #667eea; color: white; }
+        .btn-primary { background: #6E52C4; color: white; }
         .btn-primary:hover { background: #5568d3; }
         .btn-secondary { background: #edf2f7; color: #4a5568; }
         .btn-secondary:hover { background: #e2e8f0; }
@@ -120,7 +120,7 @@
         }
         .result-card.show { display: block; }
         .result-ref { font-size: 13px; color: #718096; margin-bottom: 4px; }
-        .result-ref-value { font-size: 20px; font-weight: 700; color: #667eea; font-family: 'Courier New', monospace; margin-bottom: 16px; }
+        .result-ref-value { font-size: 20px; font-weight: 700; color: #6E52C4; font-family: 'Courier New', monospace; margin-bottom: 16px; }
 
         .result-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
         .result-row:last-child { border-bottom: none; }
@@ -135,7 +135,7 @@
             font-weight: 600;
         }
         .status-badge.pending   { background: #fef5e7; color: #d97706; }
-        .status-badge.approved  { background: #dbeafe; color: #1d4ed8; }
+        .status-badge.approved  { background: #E9E2FA; color: #5B41AE; }
         .status-badge.released  { background: #f0fff4; color: #22543d; }
         .status-badge.returned  { background: #f3f4f6; color: #4b5563; }
         .status-badge.rejected  { background: #fff5f5; color: #c53030; }
@@ -169,16 +169,44 @@
             cursor: pointer;
             transition: border-color 0.2s;
         }
-        .request-item:hover { border-color: #667eea; }
+        .request-item:hover { border-color: #6E52C4; }
         .req-left { flex: 1; }
-        .req-id { font-weight: 700; color: #667eea; font-family: 'Courier New', monospace; font-size: 14px; }
+        .req-id { font-weight: 700; color: #6E52C4; font-family: 'Courier New', monospace; font-size: 14px; }
         .req-desc { font-size: 14px; color: #4a5568; margin-top: 2px; }
         .req-date { font-size: 12px; color: #a0aec0; margin-top: 2px; }
         .empty-state { text-align: center; color: #a0aec0; padding: 40px 20px; font-size: 14px; }
 
+        /* Status timeline */
+        .timeline { list-style: none; display: flex; margin: 16px 0 18px; padding: 0; }
+        .tl-step { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; min-width: 0; }
+        .tl-step::before { content: ''; position: absolute; top: 9px; right: 50%; width: 100%; height: 3px; background: #E6DFF4; z-index: 0; }
+        .tl-step:first-child::before { display: none; }
+        .tl-step.done::before, .tl-step.current::before { background: #8E78D8; }
+        .tl-step.rejected::before { background: #E6A3B0; }
+        .tl-dot { position: relative; z-index: 1; width: 20px; height: 20px; border-radius: 50%; background: #F3EFFC; border: 3px solid #E6DFF4; box-sizing: border-box; }
+        .tl-step.done .tl-dot { background: #6E52C4; border-color: #6E52C4; }
+        .tl-step.current .tl-dot { background: #fff; border-color: #6E52C4; box-shadow: 0 0 0 4px rgba(110, 82, 196, 0.18); }
+        .tl-step.rejected .tl-dot { background: #C23A52; border-color: #C23A52; }
+        .tl-label { font-size: 12px; font-weight: 700; color: #675F82; }
+        .tl-step.done .tl-label, .tl-step.current .tl-label { color: #2E2645; }
+        .tl-step.rejected .tl-label { color: #B4304A; }
+        .tl-sub { font-size: 11px; color: #675F82; line-height: 1.3; padding: 0 2px; }
+        .timeline.compact { margin: 10px 0 2px; max-width: 360px; }
+        .timeline.compact .tl-dot { width: 12px; height: 12px; border-width: 2px; }
+        .timeline.compact .tl-step::before { top: 5px; height: 2px; }
+        .timeline.compact .tl-label { font-size: 11px; font-weight: 600; }
+        .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+        .req-reject { margin-top: 6px; font-size: 13px; font-weight: 600; color: #B4304A; overflow-wrap: anywhere; }
+        .reject-box { background: #FCE8EC; border: 1px solid #F3C2CC; border-radius: 16px; padding: 14px 16px; margin-bottom: 16px; }
+        .reject-title { font-size: 15px; font-weight: 700; color: #B4304A; }
+        .reject-reason { font-size: 16px; font-weight: 600; color: #2E2645; margin: 6px 0; overflow-wrap: anywhere; }
+        .reject-next { font-size: 13px; color: #675F82; }
+        .item-src { display: block; font-size: 12px; color: #8F5208; margin-top: 2px; }
+        .request-item.is-open { outline: 2px solid #A896E2; }
+
         /* Footer note */
         .footer-note { text-align: center; font-size: 13px; color: #a0aec0; margin-top: 32px; padding-bottom: 32px; }
-        .footer-note a { color: #667eea; text-decoration: none; }
+        .footer-note a { color: #6E52C4; text-decoration: none; }
 
         @media (max-width: 600px) {
             .track-form { flex-direction: column; }
@@ -187,7 +215,7 @@
             .result-value { text-align: left; max-width: 100%; }
         }
     </style>
-</head>
+<link rel="stylesheet" href="css/clay-requester.css"></head>
 <body>
     <nav class="top-nav">
         <div class="top-nav-left">
@@ -195,15 +223,16 @@
             <div class="system-name">PharmaLab</div>
         </div>
         <div>
-            <span style="font-size:13px;color:#718096;">Student Portal</span>
+            <span style="font-size:13px;color:#718096;">Requester Portal</span>
         </div>
     </nav>
 
-    <main class="main-content">
+    <main class="main-content" data-rq-userbar>
+        <img class="page-banner" src="images/header-banner.jpg" alt="Our Lady of Fatima University, College of Pharmacy: Laboratory Automation System" width="2172" height="280">
 
         <div class="welcome-banner">
-            <h1>Student Portal</h1>
-            <p>Submit material requests and track their status using your reference number.</p>
+            <h1 id="welcome-title">My Requests</h1>
+            <p>Submit material requests and track their status.</p>
         </div>
 
         <div class="quick-actions">
@@ -214,14 +243,10 @@
             </a>
         </div>
 
-        <!-- Track by Reference Number -->
+        <!-- My Requests (own requests only; enforced by RLS) -->
         <div class="section-card">
-            <div class="section-title">🔍 Track Your Request</div>
-            <div class="track-form">
-                <input type="text" id="track-input" class="track-input" placeholder="Enter reference number (e.g. REQ-2026-0312)" />
-                <button class="btn btn-primary" onclick="trackRequest()">Track</button>
-                <button class="btn btn-secondary" onclick="clearTrack()">Clear</button>
-            </div>
+            <div class="section-title">📋 My Requests</div>
+            <div id="my-requests"><div class="empty-state">Loading your requests…</div></div>
             <div id="track-error" class="alert-box alert-error"></div>
             <div id="track-result" class="result-card"></div>
         </div>
@@ -241,13 +266,13 @@
     </main>
 
     <div class="footer-note">
-        <a href="START-HERE.html">← Back to Start</a> &nbsp;|&nbsp;
         PharmaLab &copy; 2026 College of Pharmacy
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
     <script src="js/supabase-data.js"></script>
+    <script src="js/requester-auth.js"></script>
     <script>
         function fmt(s) {
             if (!s) return '—';
@@ -264,29 +289,79 @@
             return '<span class="status-badge ' + (status||'pending') + '">' + (labels[status] || status) + '</span>';
         }
 
-        async function trackRequest() {
-            const val = (document.getElementById('track-input').value || '').trim().toUpperCase();
-            const errEl = document.getElementById('track-error');
+        function esc(v) {
+            return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        let myRequests = [];
+
+        // Submitted -> Approved -> Released -> Returned (or Submitted -> Rejected).
+        // `next` is the hint shown under the step the request is waiting for.
+        const STAGES = [
+            { key: 'submitted', label: 'Submitted', next: '' },
+            { key: 'approved',  label: 'Approved',  next: 'Waiting for the lab technician' },
+            { key: 'released',  label: 'Released',  next: 'Claim your materials on the scheduled date' },
+            { key: 'returned',  label: 'Returned',  next: 'Return borrowed items after use' },
+        ];
+        const STAGE_INDEX = { pending: 0, approved: 1, released: 2, returned: 3 };
+        function timelineHtml(req, compact) {
+            const rejected = req.status === 'rejected';
+            const reached = rejected ? 0 : (STAGE_INDEX[req.status] ?? 0);
+            const stages = rejected ? [STAGES[0], { key: 'rejected', label: 'Rejected', next: '' }] : STAGES;
+            const items = stages.map((st, i) => {
+                const state = rejected ? (i === 0 ? 'done' : 'rejected')
+                    : i <= reached ? 'done' : i === reached + 1 ? 'current' : 'todo';
+                const sub = !compact && state === 'current' ? '<span class="tl-sub">' + esc(st.next) + '</span>' : '';
+                const when = !compact && i === 0 ? '<span class="tl-sub">' + esc(fmtDT(req.dateSubmitted)) + '</span>' : '';
+                const sr = state === 'done' ? ' (done)' : state === 'current' ? ' (next)' : state === 'rejected' ? '' : ' (not yet)';
+                return '<li class="tl-step ' + state + '"><span class="tl-dot" aria-hidden="true"></span><span class="tl-label">' + esc(st.label) +
+                    '<span class="sr-only">' + sr + '</span></span>' + (i === 0 ? when : sub) + '</li>';
+            }).join('');
+            return '<ol class="timeline' + (compact ? ' compact' : '') + '" aria-label="Request progress">' + items + '</ol>';
+        }
+
+        function openRequest(requestId) {
+            const req = myRequests.find(r => r.requestId === requestId);
             const resEl = document.getElementById('track-result');
-
+            const errEl = document.getElementById('track-error');
             errEl.classList.remove('show');
-            resEl.classList.remove('show');
-
-            if (!val) {
-                errEl.textContent = 'Please enter a reference number.';
-                errEl.classList.add('show');
-                return;
-            }
-
-            const req = await getRequestById(val);
-
             if (!req) {
-                errEl.textContent = 'No request found with reference number "' + val + '". Please check and try again.';
+                errEl.textContent = 'Request "' + requestId + '" was not found in your requests.';
                 errEl.classList.add('show');
+                resEl.classList.remove('show');
                 return;
             }
-
             showResult(req, resEl);
+            document.querySelectorAll('.request-item').forEach(el => el.classList.toggle('is-open', el.dataset.ref === requestId));
+            resEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function renderMyRequests() {
+            const list = document.getElementById('my-requests');
+            if (!myRequests.length) {
+                list.innerHTML = '<div class="empty-state">You have no requests yet. Tap <strong>New Request</strong> to submit one.</div>';
+                return;
+            }
+            list.innerHTML = myRequests.map(r =>
+                '<div class="request-item" data-ref="' + esc(r.requestId) + '">' +
+                    '<div class="req-left">' +
+                        '<div class="req-id">' + esc(r.requestId) + '</div>' +
+                        '<div class="req-desc">' + esc(r.subject || '—') + (r.activity ? ' · ' + esc(r.activity) : '') + '</div>' +
+                        '<div class="req-date">Needed ' + esc(fmt(r.dateNeeded)) + ' · Submitted ' + esc(fmtDT(r.dateSubmitted)) + '</div>' +
+                        timelineHtml(r, true) +
+                        (r.status === 'rejected' && r.rejectionReason ? '<div class="req-reject">Reason: ' + esc(r.rejectionReason) + '</div>' : '') +
+                    '</div>' +
+                    statusBadge(r.status) +
+                '</div>'
+            ).join('');
+            list.querySelectorAll('.request-item').forEach(el => {
+                el.setAttribute('role', 'button');
+                el.setAttribute('tabindex', '0');
+                el.addEventListener('click', () => openRequest(el.dataset.ref));
+                el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRequest(el.dataset.ref); } });
+            });
         }
 
         function fmtTime(hhmm) {
@@ -302,16 +377,20 @@
         function statusMessage(req) {
             var s = req.status;
             if (s === 'pending')  return '<div style="background:#fef5e7;border-left:4px solid #d97706;padding:12px 16px;border-radius:8px;font-size:14px;color:#92400e;margin-bottom:16px;">⏳ <strong>Pending Review</strong> — Your request is waiting for approval from the lab technician.</div>';
-            if (s === 'approved') return '<div style="background:#dbeafe;border-left:4px solid #1d4ed8;padding:12px 16px;border-radius:8px;font-size:14px;color:#1e3a8a;margin-bottom:16px;">✅ <strong>Approved!</strong> — Your request has been approved. Bring your Student ID and claim your materials on the scheduled date.</div>';
+            if (s === 'approved') return '<div style="background:#E9E2FA;border-left:4px solid #5B41AE;padding:12px 16px;border-radius:8px;font-size:14px;color:#1e3a8a;margin-bottom:16px;">✅ <strong>Approved!</strong> — Your request has been approved. Bring your Student ID and claim your materials on the scheduled date.</div>';
             if (s === 'released') return '<div style="background:#f0fff4;border-left:4px solid #22543d;padding:12px 16px;border-radius:8px;font-size:14px;color:#22543d;margin-bottom:16px;">📦 <strong>Released</strong> — Materials have been dispensed. Please return all borrowed items after use.</div>';
             if (s === 'returned') return '<div style="background:#f3f4f6;border-left:4px solid #4b5563;padding:12px 16px;border-radius:8px;font-size:14px;color:#374151;margin-bottom:16px;">🔁 <strong>Returned</strong> — Items have been returned. Transaction complete.</div>';
-            if (s === 'rejected') return '<div style="background:#fff5f5;border-left:4px solid #e53e3e;padding:12px 16px;border-radius:8px;font-size:14px;color:#c53030;margin-bottom:16px;">❌ <strong>Rejected</strong>' + (req.rejectionReason ? ': ' + req.rejectionReason : '') + ' — Please coordinate with your instructor.</div>';
+            if (s === 'rejected') return '<div class="reject-box"><div class="reject-title">Request rejected</div>' +
+                '<div class="reject-reason">' + (req.rejectionReason ? esc(req.rejectionReason) : 'No reason was given.') + '</div>' +
+                '<div class="reject-next">Please coordinate with your instructor or the lab technician, then submit a new request.</div></div>';
             return '';
         }
 
         function showResult(req, container) {
             const items = (req.items || []).map(function(item) {
-                return '<tr><td>' + (item.name||'—') + '</td><td>' + (item.quantity||'—') + ' ' + (item.unit||'') + '</td></tr>';
+                var src = item.substituteFor ? 'Substitute for ' + item.substituteFor : (item.source === 'additional' ? 'Additional item' : '');
+                var qty = item.quantity === '' || item.quantity == null ? 'as needed' : esc(item.quantity) + ' ' + esc(item.unit || '');
+                return '<tr><td>' + esc(item.name||'—') + (src ? '<span class="item-src">' + esc(src) + '</span>' : '') + '</td><td>' + qty + '</td></tr>';
             }).join('');
 
             var timeStr = (req.timeNeeded && req.timeEnd)
@@ -322,16 +401,18 @@
 
             container.innerHTML =
                 '<div class="result-ref">Reference Number</div>' +
-                '<div class="result-ref-value">' + (req.requestId||'—') + '</div>' +
+                '<div class="result-ref-value">' + esc(req.requestId||'—') + '</div>' +
+                timelineHtml(req, false) +
                 statusMessage(req) +
                 '<div class="result-row"><span class="result-label">Status</span><span class="result-value">' + statusBadge(req.status) + '</span></div>' +
-                '<div class="result-row"><span class="result-label">Student Name</span><span class="result-value">' + (req.studentName||'—') + '</span></div>' +
-                '<div class="result-row"><span class="result-label">Subject</span><span class="result-value">' + (req.subject||'—') + '</span></div>' +
-                '<div class="result-row"><span class="result-label">Experiment</span><span class="result-value">' + (req.activity||'—') + '</span></div>' +
-                '<div class="result-row"><span class="result-label">Instructor</span><span class="result-value">' + (req.instructor||'—') + '</span></div>' +
+                '<div class="result-row"><span class="result-label">Student Name</span><span class="result-value">' + esc(req.studentName||'—') + '</span></div>' +
+                '<div class="result-row"><span class="result-label">Subject</span><span class="result-value">' + esc(req.subject||'—') + '</span></div>' +
+                '<div class="result-row"><span class="result-label">Experiment</span><span class="result-value">' + esc(req.activity||'—') + '</span></div>' +
+                '<div class="result-row"><span class="result-label">Instructor</span><span class="result-value">' + esc(req.instructor||'—') + '</span></div>' +
                 '<div class="result-row"><span class="result-label">Date Needed</span><span class="result-value">' + fmt(req.dateNeeded) + '</span></div>' +
-                '<div class="result-row"><span class="result-label">Time</span><span class="result-value">' + timeStr + '</span></div>' +
-                '<div class="result-row"><span class="result-label">Room Assignment</span><span class="result-value">' + roomName + '</span></div>' +
+                '<div class="result-row"><span class="result-label">Time</span><span class="result-value">' + esc(timeStr) + '</span></div>' +
+                '<div class="result-row"><span class="result-label">Room Assignment</span><span class="result-value">' + esc(roomName) + '</span></div>' +
+                (req.groupCount ? '<div class="result-row"><span class="result-label">Groups</span><span class="result-value">' + esc(req.groupCount) + (req.studentCount ? ' (' + esc(req.studentCount) + ' students)' : '') + '</span></div>' : '') +
                 '<div class="result-row"><span class="result-label">Submitted</span><span class="result-value">' + fmtDT(req.dateSubmitted) + '</span></div>' +
                 '<div style="margin-top:16px;font-weight:600;font-size:14px;color:#2d3748;">Requested Items</div>' +
                 '<table class="items-table"><thead><tr><th>Item</th><th>Quantity</th></tr></thead><tbody>' + (items || '<tr><td colspan="2" style="color:#a0aec0;text-align:center;">No items</td></tr>') + '</tbody></table>';
@@ -339,20 +420,19 @@
             container.classList.add('show');
         }
 
-        function clearTrack() {
-            document.getElementById('track-input').value = '';
-            document.getElementById('track-error').classList.remove('show');
-            document.getElementById('track-result').classList.remove('show');
-        }
-
-        // Pre-fill from URL param ?ref=REQ-2026-XXXX
-        (async function() {
-            const params = new URLSearchParams(window.location.search);
-            const ref = params.get('ref');
-            if (ref) {
-                document.getElementById('track-input').value = ref;
-                await trackRequest();
+        (async function () {
+            const me = await requireRequester();
+            if (me.full_name) document.getElementById('welcome-title').textContent = 'Hi, ' + me.full_name.split(' ')[0] + '!';
+            try {
+                myRequests = await getMyRequests();
+            } catch (err) {
+                console.error(err);
+                document.getElementById('my-requests').innerHTML = '<div class="empty-state">Could not load your requests. Please refresh.</div>';
+                return;
             }
+            renderMyRequests();
+            const ref = new URLSearchParams(window.location.search).get('ref');
+            if (ref) openRequest(ref.trim().toUpperCase());
         })();
     </script>
 </body>
