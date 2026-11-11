@@ -115,7 +115,7 @@ async function populateDropdowns() {
 async function populateSubjectDropdown() {
     const courseSelect = document.getElementById('course');
     const courseName = courseSelect ? courseSelect.value : '';
-    const courses = await getCourses();
+    const courses = window.__coursesCache || (window.__coursesCache = await getCourses());
     const course = courses.find(c => c.name === courseName);
     const subjects = course ? await getSubjectsByCourse(course.id) : await getSubjects();
 
@@ -605,7 +605,8 @@ function saveRequesterProfile() {
         year_level:     val('year-level'),
         section:        val('section'),
         group_name:     val('group'),
-    }).catch(err => console.warn('Profile save failed:', err));
+    }).then(() => { Object.keys(sessionStorage).filter(k => k.startsWith('pl-me-')).forEach(k => sessionStorage.removeItem(k)); })
+      .catch(err => console.warn('Profile save failed:', err));
 }
 
 function setSelectValue(id, value) {

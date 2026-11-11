@@ -141,6 +141,7 @@
     var host = document.querySelector('[data-rq-userbar]') || document.body;
     host.insertBefore(bar, host.firstChild);
     document.getElementById('rq-logout').addEventListener('click', async function () {
+      Object.keys(sessionStorage).filter(function (k) { return /^pl-(staff|me)-/.test(k); }).forEach(function (k) { sessionStorage.removeItem(k); });
       await db.auth.signOut();
       window.location.reload();
     });
@@ -165,8 +166,17 @@
       return new Promise(function () {}); // page stays behind the gate until sign-in redirect
     }
 
-    var res = await db.from('app_users').select('*').eq('id', session.user.id).maybeSingle();
-    var me = res.data;
+    // Remember the profile for this browser session so later pages open instantly;
+    // it is refreshed in the background (the database still enforces every permission).
+    var cacheKey = 'pl-me-' + session.user.id;
+    var me = null;
+    try { me = JSON.parse(sessionStorage.getItem(cacheKey) || 'null'); } catch (_) { me = null; }
+    var fresh = db.from('app_users').select('*').eq('id', session.user.id).maybeSingle().then(function (r) {
+      if (r.data) sessionStorage.setItem(cacheKey, JSON.stringify(r.data));
+      else if (!r.error) { sessionStorage.removeItem(cacheKey); return db.auth.signOut().then(function () { window.location.reload(); }); }
+      return r.data;
+    });
+    if (!me) me = await fresh;
     if (!me) {
       await db.auth.signOut();
       showGate(ACCESS_MSG);

@@ -19,6 +19,18 @@ async function requireAuth() {
     // No saved session at all: go to login right away, without waiting for the server.
     var local = await db.auth.getSession();
     if (!local.data || !local.data.session) { toLogin(); return; }
+    // Already confirmed as staff in this browser session: show the page now and re-check in the
+    // background. Data stays protected either way (row security in the database).
+    var staffKey = 'pl-staff-' + local.data.session.user.id;
+    if (sessionStorage.getItem(staffKey) === '1') {
+      var u0 = local.data.session.user;
+      var n0 = (u0.user_metadata && (u0.user_metadata.full_name || u0.user_metadata.name)) || u0.email;
+      setCurrentUser(n0); initAuthUI(n0, 'Lab Staff'); showPage();
+      db.from('app_users').select('role').eq('id', u0.id).maybeSingle().then(function (r) {
+        if (!r.error && (!r.data || r.data.role !== 'staff')) { sessionStorage.removeItem(staffKey); window.location.replace(r.data ? 'student-dashboard.html' : 'login.html?denied=1'); }
+      });
+      return;
+    }
     var result = await db.auth.getUser();
     var user = result.data && result.data.user;
     if (!user) { toLogin(); return; }
@@ -34,6 +46,7 @@ async function requireAuth() {
     var displayName = user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)
       ? (user.user_metadata.full_name || user.user_metadata.name)
       : user.email;
+    sessionStorage.setItem(staffKey, '1');
     setCurrentUser(displayName);
     initAuthUI(displayName, 'Lab Staff');
     showPage();
@@ -84,6 +97,7 @@ function initAuthUI(name, role) {
 async function doLogout() {
   var who = getCurrentUser();
   try { if (who) await addAuditEntry('Logout', who + ' signed out'); } catch(_) {}
+  Object.keys(sessionStorage).filter(k => /^pl-(staff|me)-/.test(k)).forEach(k => sessionStorage.removeItem(k));
   if (hasSupabaseAuth()) await db.auth.signOut();
   clearCurrentUser();
   window.location.href = 'login.html';

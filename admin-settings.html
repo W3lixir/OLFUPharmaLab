@@ -252,16 +252,6 @@
                 <datalist id="kit-inventory-list"></datalist>
             </section>
 
-            <section class="settings-list kit-card" style="max-height:none;margin-top:24px;" aria-labelledby="kit-link-title">
-                <h3 id="kit-link-title">Link materials to inventory</h3>
-                <p class="kit-muted">Materials that are not linked are still requested, but not deducted automatically on release. Pick the inventory item once and every experiment that uses that name is linked. Generic names like "Beaker" need you to choose the size the lab normally gives.</p>
-                <div class="kit-link-toolbar">
-                    <label for="kit-link-filter" class="filter-label">Find</label>
-                    <input type="search" id="kit-link-filter" class="filter-select" placeholder="e.g. beaker, pipette">
-                    <span class="kit-muted" id="kit-link-summary" role="status" aria-live="polite"></span>
-                </div>
-                <div id="kit-unlinked" class="kit-table-wrap"></div>
-            </section>
         </div>
 
         <!-- Instructors -->
@@ -488,7 +478,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.min.js"></script>
     <script src="js/supabase-client.js"></script>
     <script src="js/supabase-data.js"></script>
     <script src="js/auth-guard.js"></script>
