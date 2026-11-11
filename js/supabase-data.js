@@ -139,7 +139,7 @@ async function saveMyProfile(profile) {
 async function getRequestItemOptions() {
   const { data, error } = await db.rpc('request_item_options');
   if (error) throw error;
-  return data || [];
+  return naturalByName(data);
 }
 
 async function updateRequestStatus(requestId, status, extra = {}) {
@@ -229,8 +229,8 @@ function toDbRequest(req) {
 /* ── Chemicals ──────────────────────────────────────────────── */
 
 async function getChemicals() {
-  const { data } = await db.from('chemicals').select('*').order('name');
-  return data || [];
+  const { data } = await db.from('chemicals').select('*');
+  return naturalByName(data);
 }
 
 async function getChemicalById(id) {
@@ -349,8 +349,11 @@ async function getRequestItemsForDropdown() {
 /* ── Sections / Courses / Subjects / Experiments / Instructors */
 
 // "Group 2" before "Group 10": compare numbers inside names as numbers.
+function natCmp(a, b) {
+  return String(a || '').localeCompare(String(b || ''), undefined, { numeric: true, sensitivity: 'base' });
+}
 function naturalByName(list) {
-  return (list || []).sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), undefined, { numeric: true, sensitivity: 'base' }));
+  return (list || []).sort((a, b) => natCmp(a.name, b.name));
 }
 
 async function getSections() {
@@ -359,15 +362,15 @@ async function getSections() {
 }
 
 async function getCourses() {
-  const { data } = await db.from('courses').select('*').order('name');
-  return data || [];
+  const { data } = await db.from('courses').select('*');
+  return naturalByName(data);
 }
 
 // Subjects/experiments hidden in Settings (active = false) are left out of the request form.
 const sortSubjects = list => (list || []).sort((a, b) =>
-  String(a.code || a.name || '').localeCompare(String(b.code || b.name || '')));
+  natCmp(a.code || a.name, b.code || b.name));
 const sortExperiments = list => (list || []).sort((a, b) =>
-  (a.sort_order ?? 9999) - (b.sort_order ?? 9999) || String(a.name || '').localeCompare(String(b.name || '')));
+  (a.sort_order ?? 9999) - (b.sort_order ?? 9999) || natCmp(a.exp_no, b.exp_no) || natCmp(a.name, b.name));
 const isActive = r => r.active !== false;
 
 async function getSubjects(includeInactive = false) {
@@ -418,14 +421,14 @@ async function importExperimentKit(subject, experiments) {
 }
 
 async function getInstructors() {
-  const { data } = await db.from('instructors').select('*').order('name');
-  return data || [];
+  const { data } = await db.from('instructors').select('*');
+  return naturalByName(data);
 }
 
 async function getInstructorsBySubject(subjectId) {
   if (!subjectId) return getInstructors();
   const { data } = await db.from('instructors').select('*');
-  return (data || []).filter(i => (i.subject_ids || []).includes(subjectId));
+  return naturalByName((data || []).filter(i => (i.subject_ids || []).includes(subjectId)));
 }
 
 /* ── Breakages ──────────────────────────────────────────────── */
