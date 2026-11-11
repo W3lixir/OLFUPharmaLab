@@ -150,8 +150,7 @@
       parsed = null;
       await loadRefs();
       await renderBrowser();
-      await loadUnlinked();
-      if (typeof renderSubjects === 'function') renderSubjects();
+        if (typeof renderSubjects === 'function') renderSubjects();
       if (typeof renderExperiments === 'function') renderExperiments();
     } catch (err) {
       console.error(err);
@@ -322,98 +321,12 @@
   };
 
   /* ═════════════ init ═════════════ */
-  /* ═════════════ 3. BULK LINK UNLINKED MATERIALS ═════════════ */
-
-  let unlinkedGroups = [];
-
-  async function fetchUnlinked() {
-    // Page through in 1000-row windows (Supabase's default limit). Stop on a short page, on a
-    // server that ignores the range (returns more than asked), or after 50k rows as a safety cap.
-    const rows = []; const seen = new Set();
-    for (let from = 0; from < 50000; from += 1000) {
-      const { data, error } = await db.from('experiment_items')
-        .select('id,item_name,kind,unit,experiment_id').is('inventory_item_id', null).order('id').range(from, from + 999);
-      if (error) throw error;
-      const fresh = (data || []).filter(r => !seen.has(r.id));
-      fresh.forEach(r => seen.add(r.id));
-      rows.push(...fresh);
-      if (!data || data.length !== 1000 || fresh.length === 0) break;
-    }
-    const groups = new Map();
-    for (const r of rows) {
-      const key = String(r.item_name || '').trim().toLowerCase().replace(/\s+/g, ' ');
-      if (!key) continue;
-      const g = groups.get(key) || { label: r.item_name.trim(), names: new Set(), units: new Set(), kinds: new Set(), exps: new Set(), count: 0 };
-      g.names.add(r.item_name); if (r.unit) g.units.add(r.unit); g.kinds.add(r.kind); g.exps.add(r.experiment_id); g.count++;
-      groups.set(key, g);
-    }
-    unlinkedGroups = [...groups.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
-  }
-
-  function renderUnlinked() {
-    const box = $('kit-unlinked'); if (!box) return;
-    const q = ($('kit-link-filter')?.value || '').trim().toLowerCase();
-    const list = unlinkedGroups.filter(g => !q || g.label.toLowerCase().includes(q));
-    const total = unlinkedGroups.reduce((n, g) => n + g.count, 0);
-    $('kit-link-summary').textContent = unlinkedGroups.length
-      ? `${unlinkedGroups.length} names · ${total} materials not linked${q ? ` · showing ${list.length}` : ''}`
-      : 'Every material is linked to inventory.';
-    if (!list.length) { box.innerHTML = unlinkedGroups.length ? '<p class="kit-muted" style="padding:12px;">No names match.</p>' : ''; return; }
-    box.innerHTML = `<table class="equipment-table kit-link-table">
-      <thead><tr><th>Name in the kits</th><th>Used</th><th>Kit unit</th><th>Inventory item</th><th></th></tr></thead>
-      <tbody>${list.slice(0, 150).map(g => {
-        const i = unlinkedGroups.indexOf(g);
-        const guess = K.matchInventory(g.label, inventory);
-        return `<tr data-i="${i}">
-          <td><strong>${esc(g.label)}</strong><span class="kit-muted" style="display:block;font-size:11px;">${[...g.kinds].join(', ')}</span></td>
-          <td class="num">${g.count} in ${g.exps.size} exp${g.exps.size > 1 ? 's' : ''}</td>
-          <td>${esc([...g.units].join(', ') || '—')}</td>
-          <td><input type="text" class="kl-pick" list="kit-inventory-list" value="${guess ? esc(guess.name) : ''}" placeholder="Type to search inventory" aria-label="Inventory item for ${esc(g.label)}"><span class="kl-hint"></span></td>
-          <td><button type="button" class="btn btn-secondary btn-sm kl-link">Link all ${g.count}</button></td>
-        </tr>`;
-      }).join('')}</tbody></table>${list.length > 150 ? `<p class="kit-muted" style="padding:10px;">Showing the 150 most used. Use Find to narrow down.</p>` : ''}`;
-    box.querySelectorAll('tr[data-i]').forEach(tr => {
-      const g = unlinkedGroups[Number(tr.dataset.i)];
-      const input = tr.querySelector('.kl-pick'); const hint = tr.querySelector('.kl-hint');
-      const check = () => {
-        const inv = inventory.find(c => c.name.toLowerCase() === input.value.trim().toLowerCase());
-        const kitUnits = [...g.units].map(u => u.toLowerCase());
-        hint.textContent = !input.value.trim() ? '' : !inv ? 'Choose a name from the inventory list.'
-          : (inv.unit && kitUnits.length && !kitUnits.includes(String(inv.unit).toLowerCase()) && !/glassware|equipment/i.test(inv.category || ''))
-            ? `Stock is counted in ${inv.unit}; release will ask staff to deduct manually.` : '';
-      };
-      input.addEventListener('input', check); check();
-      tr.querySelector('.kl-link').addEventListener('click', async e => {
-        const btn = e.currentTarget;
-        const inv = inventory.find(c => c.name.toLowerCase() === input.value.trim().toLowerCase());
-        if (!inv) { hint.textContent = 'Choose a name from the inventory list.'; input.focus(); return; }
-        btn.disabled = true; btn.textContent = 'Linking…';
-        const { error } = await db.from('experiment_items').update({ inventory_item_id: inv.id, category: inv.category || null })
-          .in('item_name', [...g.names]).is('inventory_item_id', null);
-        if (error) { btn.disabled = false; btn.textContent = `Link all ${g.count}`; hint.textContent = 'Not saved: ' + error.message; return; }
-        try { await addAuditEntry('Experiment Kit Linked', `${g.label} → ${inv.name} (${g.count} materials)`); } catch (_) {}
-        tr.querySelector('td:last-child').innerHTML = `<span class="kl-done">Linked ✓</span>`;
-        input.disabled = true;
-        unlinkedGroups.splice(unlinkedGroups.indexOf(g), 1);
-        const total = unlinkedGroups.reduce((n, x) => n + x.count, 0);
-        $('kit-link-summary').textContent = `${unlinkedGroups.length} names · ${total} materials not linked`;
-      });
-    });
-  }
-
-  async function loadUnlinked() {
-    try { await fetchUnlinked(); renderUnlinked(); }
-    catch (err) { console.error(err); if ($('kit-link-summary')) $('kit-link-summary').textContent = 'Could not load: ' + (err.message || err); }
-  }
-
   async function init() {
     if (!$('panel-kits')) return;
     $('kit-file').addEventListener('change', e => onFile(e.target.files[0]));
     $('kit-subject').addEventListener('change', renderExperimentList);
-    $('kit-link-filter')?.addEventListener('input', renderUnlinked);
     await loadRefs();
     await renderBrowser();
-    await loadUnlinked();
   }
   document.addEventListener('DOMContentLoaded', init);
 })();
