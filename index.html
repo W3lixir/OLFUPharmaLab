@@ -119,6 +119,8 @@
     <script src="js/auth-guard.js"></script>
     <script src="js/nav-highlighting.js"></script>
     <script>
+        // Requester-typed text (names) must never be inserted as raw HTML on staff pages.
+        var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
         (function() {
             async function refresh() {
                 const [chems, expiring, low, ready, reqs] = await Promise.all([
@@ -137,7 +139,7 @@
                     } else {
                         feed.innerHTML = recent.map(function(r) {
                             var badge = r.status === 'approved' ? 'approved' : r.status === 'released' ? 'success' : r.status === 'rejected' ? 'danger' : 'warning';
-                            return '<div class="activity-item"><div class="activity-icon">📝</div><div class="activity-content"><div class="activity-title"><strong>' + (r.requestId || '') + '</strong> — ' + (r.studentName || '') + '</div><div class="activity-meta">' + (r.status || '') + '</div></div><span class="alert-badge ' + badge + '">' + (r.status || '') + '</span></div>';
+                            return '<div class="activity-item"><div class="activity-icon">📝</div><div class="activity-content"><div class="activity-title"><strong>' + esc(r.requestId) + '</strong> — ' + esc(r.studentName) + '</div><div class="activity-meta">' + esc(r.status) + '</div></div><span class="alert-badge ' + badge + '">' + esc(r.status) + '</span></div>';
                         }).join('');
                     }
                 }
