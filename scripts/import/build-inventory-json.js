@@ -1,5 +1,5 @@
 /**
- * Run once: node build-inventory-json.js
+ * Run once: node scripts/import/build-inventory-json.js
  * Reads CSV files from Downloads and outputs inventory-data.json
  * Commit inventory-data.json so the web app can use it for export.
  */
@@ -33,7 +33,7 @@ FILES.forEach(function(f) {
 });
 
 fs.writeFileSync(
-  path.join(__dirname, 'inventory-data.json'),
+  path.join(__dirname, '..', '..', 'inventory-data.json'),
   JSON.stringify(output, null, 2)
 );
 console.log('\nSaved: inventory-data.json');

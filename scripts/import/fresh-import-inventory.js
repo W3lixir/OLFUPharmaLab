@@ -1,7 +1,7 @@
 /**
  * Fresh import: Clear + re-import all inventory from CSV files
  * Using BALANCE AS OF June 2026 as current quantity
- * Run: node fresh-import-inventory.js
+ * Run: node scripts/import/fresh-import-inventory.js
  */
 
 const XLSX = require('xlsx');
