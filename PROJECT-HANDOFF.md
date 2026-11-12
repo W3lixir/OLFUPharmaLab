@@ -4,7 +4,7 @@
 
 **Why this handoff exists:** The school wants a broader, complete system for the whole College of Pharmacy. This document describes what already exists and works in production, so the new system can reuse the data model, workflows, and lessons learned instead of starting from scratch.
 
-> The old `README.md` and `PROJECT-STRUCTURE.md` in the repo are **outdated**. They describe an early HTML prototype and a planned React/Prisma stack that was never built. Trust this file and the code over those two.
+> `README.md` is the short version (setup, tests, layout). This file is the full description of what exists.
 
 ---
 
