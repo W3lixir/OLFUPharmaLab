@@ -4,7 +4,7 @@
 
 **Why this handoff exists:** The school wants a broader, complete system for the whole College of Pharmacy. This document describes what already exists and works in production, so the new system can reuse the data model, workflows, and lessons learned instead of starting from scratch.
 
-> The old `README.md` and `PROJECT-STRUCTURE.md` in the repo are **outdated**. They describe an early HTML prototype and a planned React/Prisma stack that was never built. Trust this file and the code over those two.
+> `README.md` is the short version (setup, tests, layout). This file is the full description of what exists.
 
 ---
 
@@ -18,7 +18,7 @@
 | Backend | Supabase (Postgres, Auth, Storage, one Edge Function) |
 | Supabase project ref | `ygznqaqyrhhpeuibdsqe` |
 | Local dev | `npm install && npm run dev` (live-server on port 3000) |
-| Tests | `node --test tests/*.test.cjs`, plus `tests/laboratory-reports.sql` run in the SQL Editor |
+| Tests | `npm test`, plus the `tests/*.sql` scripts run in the SQL Editor (they roll back) |
 | Status | In daily use by lab staff. Active since mid-2026. |
 
 Supabase is loaded from the CDN (`@supabase/supabase-js@2`). The client is created in `js/supabase-client.js` using the **public anon key**, which is fine to expose. The service role key must never appear in frontend code.
@@ -54,7 +54,7 @@ Status values: `pending` → `approved` → `released` → returned. `rejected` 
 - `inventory.html` covers chemicals, glassware, and equipment (tables `chemicals`, `equipment`, `supplies`), with categories, storage location, min quantity (low stock), expiry, supplier, and MSDS link.
 - Each item has a **per-semester history** (`inventory_history`) with previous balance, received/acquisition, consumption, and a bar chart in the item popup.
 - **Balance rule** (`js/inventory-balance.js`, tested): editing previous balance or received amount adjusts current stock **only by the delta**, so stock already issued stays deducted. Stock can never go negative.
-- The initial data was imported from the school's Excel inventory (`data-import/`, plus scripts like `fresh-import-inventory.js`).
+- The initial data was imported from the school's Excel inventory (`data-import/`, plus the one-off scripts in `scripts/import/`).
 
 ### 3.3 Rooms and schedule
 - `laboratory-rooms.html` and `lecture-rooms.html` show availability. `add-schedule.html` and `room-logs.html` manage entries.
@@ -102,7 +102,6 @@ Storage buckets: incident evidence images, and `laboratory-report-photos` (priva
 css/lab-ui.css         Shared UI styles (OLFU green/teal institutional look)
 js/supabase-client.js  Creates the global `db` Supabase client
 js/supabase-data.js    Data access layer: getRequests, saveRequest, getChemicals, deductChemicalQuantity, room schedule, breakages, audit…
-js/data.js             Older localStorage-era helpers (partly legacy)
 js/auth-guard.js       Login check + mobile sidebar; include on every staff page
 js/student-request.js  Public request form logic
 js/request-editor.js   Edit pending requests
@@ -111,8 +110,9 @@ js/laboratory-report-*.js  QR report forms, inbox, QR
 supabase/functions/submit-laboratory-report/  Edge Function (Deno)
 migrations/            Dated SQL migrations
 data-import/           Original Excel/CSV inventory + import SQL
-tests/                 Node tests + SQL test script
-*.js at root           One-off maintenance scripts (sidebar sync, imports). Not part of the app.
+tests/                 Node tests (npm test) + SQL test scripts
+partials/sidebar.html  The one staff sidebar; copy into pages with: node scripts/sync-sidebar.js
+scripts/import/        One-off inventory import scripts. Not part of the app.
 ```
 
 All time handling uses **Philippine time (Asia/Manila)**. See `getTodayManilaDateStr()` and related helpers in `supabase-data.js`.
@@ -125,7 +125,7 @@ All time handling uses **Philippine time (Asia/Manila)**. See `getTodayManilaDat
 2. **RLS was rebuilt** by the requester-login migration (every public table defaults to staff-only). Any new table must get its own policies.
 3. **Request items are JSONB** rather than a `request_items` table, which makes item-level reporting and inventory joins harder. Normalize this in the new system.
 4. **Inventory is matched by item name/ID inside JSONB**, not by foreign keys.
-5. **Duplicated HTML/CSS per page**, with sidebar markup copied across files and kept in sync by root scripts (`unify-sidebar.js`, etc.).
+5. **Duplicated HTML/CSS per page.** The sidebar now has one source, `partials/sidebar.html`, copied into every staff page by `node scripts/sync-sidebar.js` (checked by `npm test`). Other page chrome is still duplicated.
 6. `audit_log` is free text, not structured (no entity type/id).
 7. The schema file is behind the live database (see section 4).
 

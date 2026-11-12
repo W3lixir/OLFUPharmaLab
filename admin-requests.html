@@ -827,10 +827,33 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
             return item.quantity === '' || item.quantity == null ? 'as needed' : item.quantity;
         }
 
+        // Release and return run in one database transaction (migrations/20261114-release-return-rpc.sql):
+        // stock rows are locked, so two lab techs cannot overwrite each other's numbers, and a dropped
+        // connection never leaves a request half-released. Until that migration is run, the older
+        // step-by-step code below is used instead.
+        const isMissingRpc = err => err && (err.code === 'PGRST202' || /could not find the function/i.test(err.message || ''));
+
         async function releaseRequest() {
             if (!currentRequestData) return;
             if (!confirm('Mark this request as Released? This will deduct the requested items from inventory.')) return;
 
+            const { data, error } = await db.rpc('release_request', {
+                p_request_id: currentRequestData.requestId,
+                p_user_name:  getCurrentUser() || 'Unknown',
+            });
+            if (isMissingRpc(error)) return releaseRequestStepByStep();
+            if (error) { alert('Error releasing request: ' + (error.message || error)); await loadRequests(); return; }
+
+            currentRequestData.items = data.items || currentRequestData.items;
+            const skipped = data.skipped || [];
+            if (skipped.length > 0) {
+                alert('Released, but these items were NOT deducted from inventory. Please adjust manually:\n\n• ' + skipped.join('\n• '));
+            }
+            await loadRequests();
+            closeModal();
+        }
+
+        async function releaseRequestStepByStep() {
             try {
                 await updateRequestStatus(currentRequestData.requestId, 'released');
                 await addAuditEntry('Request Released', currentRequestData.requestId + ' — ' + (currentRequestData.studentName || ''));
@@ -898,7 +921,9 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
         async function openReturnModal() {
             if (!currentRequestData) return;
             const borrowCategories = ['Glassware', 'Equipment'];
-            const items = (currentRequestData.items || []).filter(it => borrowCategories.includes(it.category));
+            // _index = position in the saved request, so the database knows which item each row is.
+            const items = (currentRequestData.items || []).map((it, idx) => ({ ...it, _index: idx }))
+                .filter(it => borrowCategories.includes(it.category));
 
             if (items.length === 0) {
                 alert('No Glassware or Equipment items in this request to return.');
@@ -908,7 +933,7 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
             // Load groups for the damage dropdown
             const groups = await getGroups();
             const groupOptions = '<option value="">Select Group</option>' +
-                groups.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
+                groups.map(g => `<option value="${escHtml(g.name)}">${escHtml(g.name)}</option>`).join('');
 
             // Set default return datetime to now
             const now = new Date();
@@ -1003,6 +1028,46 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
             if (!receivedBy) { alert('Enter the name of who received the items.'); return; }
             if (!returnDt)   { alert('Set the return date and time.'); return; }
 
+            const items  = document.getElementById('returnModal')._items || [];
+            const reqId  = currentRequestData.requestId;
+
+            for (let i = 0; i < items.length; i++) {
+                if (returnCounts(i).over) {
+                    updateReturnRow(i);
+                    alert(`"${items[i].name}": Good + Damaged is more than the quantity borrowed.`);
+                    return;
+                }
+            }
+
+            const lines = items.map((it, i) => {
+                const { good, bad } = returnCounts(i);
+                return {
+                    index:   it._index,
+                    good,
+                    damaged: bad,
+                    name:    (document.getElementById(`ret-name-${i}`)?.value || '').trim(),
+                    group:   document.getElementById(`ret-group-${i}`)?.value || '',
+                };
+            });
+            const { data, error } = await db.rpc('return_request', {
+                p_request_id:  reqId,
+                p_lines:       lines,
+                p_received_by: receivedBy,
+                p_returned_at: new Date(returnDt).toISOString(),
+                p_user_name:   getCurrentUser() || 'Admin',
+            });
+            if (isMissingRpc(error)) return confirmReturnStepByStep(receivedBy, returnDt);
+            if (error) { alert('Error processing return: ' + (error.message || error)); await loadRequests(); return; }
+
+            (data.warnings || []).forEach(w => alert('Warning: Return was saved but ' + w.charAt(0).toLowerCase() + w.slice(1)));
+            const summary = data.summary || [];
+            closeReturnModal();
+            await loadRequests();
+            closeModal();
+            alert('Return processed successfully!' + (summary.length ? '\n\nLogged to Breakage / Damage:\n• ' + summary.join('\n• ') : ''));
+        }
+
+        async function confirmReturnStepByStep(receivedBy, returnDt) {
             const items  = document.getElementById('returnModal')._items || [];
             const borrower = currentRequestData.studentName || 'Unknown';
             const reqId  = currentRequestData.requestId;
