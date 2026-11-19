@@ -1,7 +1,7 @@
 /**
  * Unified Navigation Highlighting
- * Flat sidebar with 6 sections. Sub-pages (admin-requests, equipment,
- * laboratory-rooms, room-logs) highlight their parent section.
+ * Flat sidebar (markup in partials/sidebar.html). Sub-pages (equipment, breakage,
+ * laboratory-rooms, room-logs ...) highlight their parent section.
  * Also handles in-page top tabs (.page-tab[data-tab]) via window.location.
  */
 (function () {
@@ -16,11 +16,14 @@
             'lab-reports.html':        'labtech',
             'inventory.html':          'inventory',
             'equipment.html':          'inventory',
+            'breakage.html':           'inventory',
             'lecture-rooms.html':      'rooms',
             'laboratory-rooms.html':   'rooms',
             'add-schedule.html':       'rooms',
             'activity-log.html':       'activity',
             'room-logs.html':          'activity',
+            'students.html':           'students',
+            'reports.html':            'reports',
             'admin-settings.html':     'settings'
         };
 

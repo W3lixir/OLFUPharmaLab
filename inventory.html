@@ -234,6 +234,8 @@
     <script src="js/auth-guard.js"></script>
     <script src="js/nav-highlighting.js"></script>
     <script>
+        // Inventory text (imported from Excel or typed by staff) is escaped before it goes into HTML.
+        var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
         (function () {
             var fmt = function (s) { return s ? new Date(s).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'; };
 
@@ -438,7 +440,7 @@
                     list.forEach(function (c) { var l = c.storage || c.location || ''; if (l && locations.indexOf(l) === -1) locations.push(l); });
                     locations.sort();
                     var cur = storageSelect.value;
-                    storageSelect.innerHTML = '<option value="">All Storage</option>' + locations.map(function (l) { return '<option value="' + l + '">' + l + '</option>'; }).join('');
+                    storageSelect.innerHTML = '<option value="">All Storage</option>' + locations.map(function (l) { return '<option value="' + esc(l) + '">' + esc(l) + '</option>'; }).join('');
                     if (cur) storageSelect.value = cur;
                 }
 
@@ -466,20 +468,20 @@
                     if (expiryDate) { expiryDate.setHours(0, 0, 0, 0); if (expiryDate < today) expiryClass = 'expiry-danger'; else if (expiryDate <= in30) expiryClass = 'expiry-warning'; }
                     var cat = c.category || '—';
                     var catColor = categoryBadgeColors[cat] || '#6b7280';
-                    var catBadge = cat !== '—' ? '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;color:#fff;background:' + catColor + ';">' + cat + '</span>' : '—';
+                    var catBadge = cat !== '—' ? '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;color:#fff;background:' + catColor + ';">' + esc(cat) + '</span>' : '—';
                     var id = c.id || '';
                     var qtyStyle = qty <= 0 ? 'text-align:right;font-weight:600;color:var(--lab-danger);' : 'text-align:right;font-weight:600;';
                     return '<tr>' +
-                        '<td><div class="chemical-name">' + (c.name || '—') + '</div></td>' +
+                        '<td><div class="chemical-name">' + esc(c.name || '—') + '</div></td>' +
                         '<td>' + catBadge + '</td>' +
-                        '<td style="' + qtyStyle + '">' + qtyStr + '</td>' +
-                        '<td>' + storage + '</td>' +
-                        '<td>' + supplier + '</td>' +
+                        '<td style="' + qtyStyle + '">' + esc(qtyStr) + '</td>' +
+                        '<td>' + esc(storage) + '</td>' +
+                        '<td>' + esc(supplier) + '</td>' +
                         '<td class="' + expiryClass + '">' + expiryStr + '</td>' +
                         '<td><div class="action-btns">' +
-                        '<button type="button" class="action-btn" data-action="view" data-id="' + id + '">View</button>' +
-                        '<button type="button" class="action-btn" data-action="edit" data-id="' + id + '">Edit</button>' +
-                        '<button type="button" class="action-btn action-delete" data-action="delete" data-id="' + id + '">Delete</button>' +
+                        '<button type="button" class="action-btn" data-action="view" data-id="' + esc(id) + '">View</button>' +
+                        '<button type="button" class="action-btn" data-action="edit" data-id="' + esc(id) + '">Edit</button>' +
+                        '<button type="button" class="action-btn action-delete" data-action="delete" data-id="' + esc(id) + '">Delete</button>' +
                         '</div></td></tr>';
                 }).join('');
 
@@ -582,7 +584,7 @@
                     var qtyStr = (c.unit ? c.quantity + ' ' + c.unit : c.quantity) || '—';
                     var cat = c.category || '—';
                     var catColor = categoryBadgeColors[cat] || '#6b7280';
-                    var catBadgeView = cat !== '—' ? '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;color:#fff;background:' + catColor + ';">' + cat + '</span>' : '—';
+                    var catBadgeView = cat !== '—' ? '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;color:#fff;background:' + catColor + ';">' + esc(cat) + '</span>' : '—';
                     var uom = c.unit || '—';
                     var currentBal  = c.quantity != null ? c.quantity + (c.unit ? ' ' + c.unit : '') : '—';
                     var previousBal = c.previous_balance != null ? c.previous_balance + (c.unit ? ' ' + c.unit : '') : '—';
@@ -595,20 +597,20 @@
                         '<div class="lab-modal-section">' +
                         (fifoHtml ? fifoHtml : '') +
                         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">' +
-                        '<div class="lab-detail-row"><span class="lab-detail-label">Item Name</span><span class="lab-detail-value">' + (c.name || '—') + '</span></div>' +
+                        '<div class="lab-detail-row"><span class="lab-detail-label">Item Name</span><span class="lab-detail-value">' + esc(c.name || '—') + '</span></div>' +
                         '<div class="lab-detail-row"><span class="lab-detail-label">Category</span><span class="lab-detail-value">' + catBadgeView + '</span></div>' +
-                        '<div class="lab-detail-row"><span class="lab-detail-label">Reference No.</span><span class="lab-detail-value">' + refNum + '</span></div>' +
-                        '<div class="lab-detail-row"><span class="lab-detail-label">UOM</span><span class="lab-detail-value">' + uom + '</span></div>' +
-                        '<div class="lab-detail-row"><span class="lab-detail-label">Current Balance</span><span class="lab-detail-value" style="font-weight:700;color:var(--lab-primary);">' + currentBal + '</span></div>' +
-                        '<div class="lab-detail-row"><span class="lab-detail-label">Previous Balance</span><span class="lab-detail-value">' + previousBal + '</span></div>' +
-                        '<div class="lab-detail-row"><span class="lab-detail-label">Requested Amount</span><span class="lab-detail-value">' + reqAmt + '</span></div>' +
-                        '<div class="lab-detail-row"><span class="lab-detail-label">Received Amount</span><span class="lab-detail-value">' + recAmt + '</span></div>' +
+                        '<div class="lab-detail-row"><span class="lab-detail-label">Reference No.</span><span class="lab-detail-value">' + esc(refNum) + '</span></div>' +
+                        '<div class="lab-detail-row"><span class="lab-detail-label">UOM</span><span class="lab-detail-value">' + esc(uom) + '</span></div>' +
+                        '<div class="lab-detail-row"><span class="lab-detail-label">Current Balance</span><span class="lab-detail-value" style="font-weight:700;color:var(--lab-primary);">' + esc(currentBal) + '</span></div>' +
+                        '<div class="lab-detail-row"><span class="lab-detail-label">Previous Balance</span><span class="lab-detail-value">' + esc(previousBal) + '</span></div>' +
+                        '<div class="lab-detail-row"><span class="lab-detail-label">Requested Amount</span><span class="lab-detail-value">' + esc(reqAmt) + '</span></div>' +
+                        '<div class="lab-detail-row"><span class="lab-detail-label">Received Amount</span><span class="lab-detail-value">' + esc(recAmt) + '</span></div>' +
                         '<div class="lab-detail-row"><span class="lab-detail-label">Date of Acquisition</span><span class="lab-detail-value">' + fmt(c.delivery_date || c.deliveryDate) + '</span></div>' +
-                        '<div class="lab-detail-row"><span class="lab-detail-label">Reorder Level</span><span class="lab-detail-value">' + reorderLvl + '</span></div>' +
-                        '<div class="lab-detail-row"><span class="lab-detail-label">Storage</span><span class="lab-detail-value">' + storage + '</span></div>' +
-                        '<div class="lab-detail-row"><span class="lab-detail-label">Supplier</span><span class="lab-detail-value">' + (c.supplier || '—') + '</span></div>' +
+                        '<div class="lab-detail-row"><span class="lab-detail-label">Reorder Level</span><span class="lab-detail-value">' + esc(reorderLvl) + '</span></div>' +
+                        '<div class="lab-detail-row"><span class="lab-detail-label">Storage</span><span class="lab-detail-value">' + esc(storage) + '</span></div>' +
+                        '<div class="lab-detail-row"><span class="lab-detail-label">Supplier</span><span class="lab-detail-value">' + esc(c.supplier || '—') + '</span></div>' +
                         '<div class="lab-detail-row"><span class="lab-detail-label">Expiry Date</span><span class="lab-detail-value">' + fmt(c.expiry) + '</span></div>' +
-                        '<div class="lab-detail-row"><span class="lab-detail-label">MSDS / SDS</span><span class="lab-detail-value">' + (c.msds && c.msds.trim() ? '<a href="' + c.msds.trim() + '" target="_blank" rel="noopener" class="sds-btn">View SDS</a>' : '—') + '</span></div>' +
+                        '<div class="lab-detail-row"><span class="lab-detail-label">MSDS / SDS</span><span class="lab-detail-value">' + (c.msds && /^https?:\/\//i.test(c.msds.trim()) ? '<a href="' + esc(c.msds.trim()) + '" target="_blank" rel="noopener" class="sds-btn">View SDS</a>' : '—') + '</span></div>' +
                         '</div>' +
                         '</div>' +
                         '<div style="margin:20px 0 0;padding-top:16px;border-top:1px solid var(--lab-border);">' +
@@ -991,8 +993,8 @@
                 var itemsList = document.getElementById('delete-items-list');
                 itemsList.innerHTML = list.map(function (c) {
                     return '<label style="display: flex; align-items: center; gap: 8px; padding: 6px; cursor: pointer; border-radius: 4px; hover: background: var(--lab-bg-secondary);">' +
-                        '<input type="checkbox" class="delete-item-checkbox" data-id="' + (c.id || '') + '" style="cursor: pointer; width: 16px; height: 16px;">' +
-                        '<span style="flex: 1; font-size: 13px;">' + (c.name || '—') + ' <span style="color: #999;">(' + (c.category || 'uncategorized') + ')</span></span>' +
+                        '<input type="checkbox" class="delete-item-checkbox" data-id="' + esc(c.id || '') + '" style="cursor: pointer; width: 16px; height: 16px;">' +
+                        '<span style="flex: 1; font-size: 13px;">' + esc(c.name || '—') + ' <span style="color: #999;">(' + esc(c.category || 'uncategorized') + ')</span></span>' +
                         '</label>';
                 }).join('');
 

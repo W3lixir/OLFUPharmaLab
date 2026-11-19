@@ -1,7 +1,7 @@
 /**
  * OLFU PharmaLab - Inventory Report Generator
  * Reads CSV files from Downloads and generates Excel report
- * Run: node generate-report.js
+ * Run: node scripts/import/generate-report.js
  */
 
 const XLSX = require('xlsx');

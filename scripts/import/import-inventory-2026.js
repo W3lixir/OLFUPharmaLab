@@ -1,6 +1,6 @@
 /**
  * Enriched inventory import — COP VAL LAB 2nd SEM INVENTORY 25-26
- * Run: node import-inventory-2026.js
+ * Run: node scripts/import/import-inventory-2026.js
  *
  * Reads the 5 CSV tabs from Downloads, uses BALANCE AS OF June 2026 as the
  * current quantity, and MERGE-upserts enriched rows into Supabase `chemicals`

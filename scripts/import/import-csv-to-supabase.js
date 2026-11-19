@@ -1,6 +1,6 @@
 /**
  * Import CSV inventory data into Supabase
- * Run: node import-csv-to-supabase.js
+ * Run: node scripts/import/import-csv-to-supabase.js
  *
  * Reads each CSV, finds the latest balance column (BALANCE AS OF June 2026),
  * and upserts items into the Supabase chemicals table.

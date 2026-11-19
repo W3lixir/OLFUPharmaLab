@@ -1,0 +1,13 @@
+# Files the website never loads. Keeping them off the live site means people cannot download
+# the raw inventory/instructor files, SQL or scripts by guessing a URL.
+# (They stay in the Git repository.)
+data-import/
+migrations/
+scripts/
+supabase/
+tests/
+partials/
+*.md
+*.sql
+package.json
+package-lock.json

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "live-server --port=3000 --open=/login.html",
     "start": "live-server --port=3000 --open=/login.html",
-    "serve": "live-server --port=3000"
+    "serve": "live-server --port=3000",
+    "test": "node --test tests/*.test.cjs",
+    "sync-sidebar": "node scripts/sync-sidebar.js"
   },
   "keywords": [
     "lims",

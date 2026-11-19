@@ -388,6 +388,10 @@
     <script src="js/auth-guard.js"></script>
     <script src="js/nav-highlighting.js"></script>
     <script>
+        // Text from the database is escaped before it goes into HTML; js() makes a safe quoted
+        // argument for inline onclick handlers (names such as 12" ruler or O'Haus stay intact).
+        const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const js  = v => esc(JSON.stringify(String(v == null ? '' : v)));
         let allEquipment = [];
         let allGlassware = [];
         let activeModalItemId = null;
@@ -467,15 +471,15 @@
             tbody.innerHTML = list.map(e => {
                 const status = maintenanceStatus(e.expiry);
                 return `<tr>
-                    <td style="font-weight:500;">${e.name}</td>
-                    <td><span class="qty-display">${e.quantity ?? 0}</span> <span style="font-size:12px;color:#718096;">${e.unit || 'pcs'}</span></td>
-                    <td style="color:#718096;">${e.storage || '—'}</td>
+                    <td style="font-weight:500;">${esc(e.name)}</td>
+                    <td><span class="qty-display">${esc(e.quantity ?? 0)}</span> <span style="font-size:12px;color:#718096;">${esc(e.unit || 'pcs')}</span></td>
+                    <td style="color:#718096;">${esc(e.storage || '—')}</td>
                     <td>${e.expiry ? fmtDate(e.expiry) : '<span style="color:#a0aec0;">Not set</span>'}</td>
                     <td><span class="badge ${status.cls}">${status.label}</span></td>
                     <td>
                         <div class="action-btns">
-                            <button class="btn-sm btn-amber" onclick="openMaintenanceModal('${e.id}','${e.name.replace(/'/g,"\\'")}','${e.expiry||''}')">Set Maintenance</button>
-                            <button class="btn-sm btn-teal" onclick="openBorrowModalFor('${e.id}','${e.name.replace(/'/g,"\\'")}','Equipment')">Log Borrow</button>
+                            <button class="btn-sm btn-amber" onclick="openMaintenanceModal(${js(e.id)},${js(e.name)},${js(e.expiry||'')})">Set Maintenance</button>
+                            <button class="btn-sm btn-teal" onclick="openBorrowModalFor(${js(e.id)},${js(e.name)},'Equipment')">Log Borrow</button>
                         </div>
                     </td>
                 </tr>`;
@@ -495,14 +499,14 @@
                 return;
             }
             tbody.innerHTML = list.map(g => `<tr>
-                <td style="font-weight:500;">${g.name}</td>
-                <td><span class="qty-display">${g.quantity ?? 0}</span></td>
-                <td style="color:#718096;">${g.unit || 'pcs'}</td>
-                <td style="color:#718096;">${g.storage || '—'}</td>
+                <td style="font-weight:500;">${esc(g.name)}</td>
+                <td><span class="qty-display">${esc(g.quantity ?? 0)}</span></td>
+                <td style="color:#718096;">${esc(g.unit || 'pcs')}</td>
+                <td style="color:#718096;">${esc(g.storage || '—')}</td>
                 <td>
                     <div class="action-btns">
-                        <button class="btn-sm btn-slate" onclick="openQtyModal('${g.id}','${g.name.replace(/'/g,"\\'")}',${g.quantity??0})">Update Qty</button>
-                        <button class="btn-sm btn-teal" onclick="openBorrowModalFor('${g.id}','${g.name.replace(/'/g,"\\'")}','Glassware')">Log Borrow</button>
+                        <button class="btn-sm btn-slate" onclick="openQtyModal(${js(g.id)},${js(g.name)},${Number(g.quantity)||0})">Update Qty</button>
+                        <button class="btn-sm btn-teal" onclick="openBorrowModalFor(${js(g.id)},${js(g.name)},'Glassware')">Log Borrow</button>
                     </div>
                 </td>
             </tr>`).join('');
@@ -659,7 +663,7 @@
             const type = document.getElementById('borrow-type').value;
             const list = type === 'Equipment' ? allEquipment : allGlassware;
             document.getElementById('borrow-item').innerHTML =
-                list.map(i => `<option value="${i.id}" data-qty="${i.quantity??0}" data-unit="${i.unit||'pcs'}">${i.name} (${i.quantity??0} ${i.unit||'pcs'})</option>`).join('');
+                list.map(i => `<option value="${esc(i.id)}" data-qty="${esc(i.quantity??0)}" data-unit="${esc(i.unit||'pcs')}">${esc(i.name)} (${esc(i.quantity??0)} ${esc(i.unit||'pcs')})</option>`).join('');
         }
 
         async function saveBorrow() {
