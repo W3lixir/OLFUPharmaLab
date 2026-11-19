@@ -303,7 +303,7 @@
             <div class="modal-actions">
                 <button class="btn btn-danger" onclick="rejectRequest()">Reject Request</button>
                 <button class="btn btn-secondary" onclick="printRequestDetails()">Print Details</button>
-                <button class="btn btn-secondary" onclick="closeModal()">Save Draft</button>
+                <button class="btn btn-secondary" id="save-draft-btn" onclick="saveDraft()">Save Draft</button>
                 <button class="btn btn-warning" id="release-btn" onclick="releaseRequest()" style="display:none;background:#f59e0b;color:white;border:none;">Mark as Released</button>
                 <button class="btn btn-primary" id="return-btn" onclick="openReturnModal()" style="display:none;background:#8b5cf6;border:none;">Process Return</button>
                 <button class="btn btn-secondary" id="edit-request-btn" onclick="editPendingRequest()">Edit Request</button>
@@ -656,6 +656,7 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
 
         // Open request detail modal
         function openRequestDetail(requestId) {
+            if (window.endRequestEdit) endRequestEdit();
             const request = allRequests.find(r => r.requestId === requestId);
             if (!request) {
                 alert('Request not found');
@@ -776,12 +777,24 @@ ${request.remarks ? '<p>Purpose / Remarks: <strong>' + escHtml(request.remarks) 
         }
 
         function closeModal() {
+            if (window.endRequestEdit) endRequestEdit();
             document.getElementById('requestModal').classList.remove('active');
+        }
+
+        // Save Draft: keeps the request pending. If it is being edited, the edits are saved first.
+        async function saveDraft() {
+            if (window.isEditingRequest && isEditingRequest()) {
+                if (!(await saveRequestEdits())) return;
+            }
+            closeModal();
         }
 
         async function approveRequest() {
             if (!currentRequestData) return;
-            if (!confirm('Are you sure you want to approve this request?')) return;
+            const editing = window.isEditingRequest && isEditingRequest();
+            if (!confirm(editing ? 'Save your edits and approve this request?' : 'Are you sure you want to approve this request?')) return;
+            // Edits in progress are saved first, so the approved request is the edited one.
+            if (editing && !(await saveRequestEdits())) return;
 
             try {
                 await updateRequestStatus(currentRequestData.requestId, 'approved');
